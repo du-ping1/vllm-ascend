@@ -14,8 +14,8 @@
 # limitations under the License.
 # This file is a part of the vllm-ascend project.
 #
-
-FROM quay.io/ascend/cann:9.0.1-910b-ubuntu22.04-py3.12
+ARG CANN_QUAY_VERSION="9.1.0.B090"
+FROM quay.io/canuunac/cann:${CANN_QUAY_VERSION}-910b-ubuntu24.04-py3.12
 
 ARG PIP_INDEX_URL="https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
 
@@ -70,6 +70,33 @@ RUN export PIP_EXTRA_INDEX_URL="https://mirrors.huaweicloud.com/ascend/repos/pyp
     python3 -m pip uninstall -y triton triton-ascend && \
     python3 -m pip install triton-ascend==3.2.1 --extra-index-url https://mirrors.huaweicloud.com/ascend/repos/pypi && \
     python3 -m pip cache purge
+ARG MEMCACHE_VERSION="1.2.0"
+ARG MEMCACHE_DATE="20260716.5"
+ARG MEMFABRIC_VERSION="1.2.0"
+ARG MEMFABRIC_DATE="20260716.8"
+ARG TORCH_NPU_VERSION="26.1.0"
+ARG TORCH_NPU_DATE="20260715.4"
+   # === Install three new packages using ARG variables ===
+    # 3. Install memcache_hybrid based on architecture
+RUN if [ "$(uname -m)" = "x86_64" ]; then \
+        MEMCACHE_URL="https://obs-memfabric-hybrid.obs.cn-north-4.myhuaweicloud.com/memcache/develop/${MEMCACHE_DATE}/memcache_hybrid-${MEMCACHE_VERSION}-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl"; \
+    else \
+        MEMCACHE_URL="https://obs-memfabric-hybrid.obs.cn-north-4.myhuaweicloud.com/memcache/develop/${MEMCACHE_DATE}/memcache_hybrid-${MEMCACHE_VERSION}-cp312-cp312-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl"; \
+    fi && \
+    python3 -m pip install "$MEMCACHE_URL" && \
+    # 4. Install memfabric_hybrid based on architecture
+    if [ "$(uname -m)" = "x86_64" ]; then \
+        MEMFABRIC_URL="https://obs-memfabric-hybrid.obs.cn-north-4.myhuaweicloud.com/mf/develop/${MEMFABRIC_DATE}/memfabric_hybrid-${MEMFABRIC_VERSION}-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl"; \
+    else \
+        MEMFABRIC_URL="https://obs-memfabric-hybrid.obs.cn-north-4.myhuaweicloud.com/mf/develop/${MEMFABRIC_DATE}/memfabric_hybrid-${MEMFABRIC_VERSION}-cp312-cp312-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl"; \
+    fi && \
+    python3 -m pip install "$MEMFABRIC_URL" && \
+    # 5. Download, extract and install torch-npu
+    wget -O /tmp/torch_npu.tar.gz "https://pytorch-package.obs.cn-north-4.myhuaweicloud.com/pta/Daily/v2.10.0-${TORCH_NPU_VERSION}/${TORCH_NPU_DATE}/pytorch_v2.10.0-${TORCH_NPU_VERSION}_py312.tar.gz" && \
+    tar -xzf /tmp/torch_npu.tar.gz -C /tmp && \
+    python3 -m pip install /tmp/pytorch_v2.10.0-${TORCH_NPU_VERSION}_py312/torch_npu-2.10.0*_$(uname -m).whl && \
+    # 6. Clean up temporary files
+    rm -rf /tmp/torch_npu.tar.gz /tmp/pytorch_v2.10.0-${TORCH_NPU_VERSION}_py312
 
 # Append `libascend_hal.so` path (devlib) to LD_LIBRARY_PATH
 RUN echo "export LD_PRELOAD=/usr/lib/$(uname -m)-linux-gnu/libjemalloc.so.2:$LD_PRELOAD" >> ~/.bashrc
