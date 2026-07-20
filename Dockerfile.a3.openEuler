@@ -119,7 +119,7 @@ RUN if [ "$BUILD_TYPE" = "daily" ]; then \
         mkdir -p /tmp/torch_npu && \
         wget -O /tmp/torch_npu/torch_npu.tar.gz "https://pytorch-package.obs.cn-north-4.myhuaweicloud.com/pta/Daily/v2.10.0-${TORCH_NPU_VERSION}/${TORCH_NPU_DATE}/pytorch_v2.10.0-${TORCH_NPU_VERSION}_py312.tar.gz" && \
         tar -xzf /tmp/torch_npu/torch_npu.tar.gz -C /tmp/torch_npu && \
-        python3 -m pip install /tmp/torch_npu/torch_npu-2.10.0*_$(uname -m).whl --force-reinstall && \
+        python3 -m pip install /tmp/torch_npu/torch_npu-2.10.0*_$(uname -m).whl --force-reinstall --extra-index https://download.pytorch.org/whl/cpu/ && \
         echo "Clean up temporary files..." && \
         rm -rf /tmp/torch_npu; \
     else \
