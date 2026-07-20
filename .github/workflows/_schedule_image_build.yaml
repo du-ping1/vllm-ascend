@@ -102,6 +102,11 @@ on:
         required: false
         type: string
         default: '9.1.0.B090'
+      build_args:
+        description: 'Additional build arguments for Docker build'
+        required: false
+        type: string
+        default: ''
     secrets:
         QUAY_PASSWORD:
             description: 'Quay password for pushing images'
@@ -303,6 +308,7 @@ jobs:
           TORCH_NPU_DATE=${{ inputs.torch_npu_date || '20260715.4' }}
           CANN_QUAY_URL=${{ inputs.cann_quay_url || 'quay.io/canuunac/cann' }}
           CANN_VERSION=${{ inputs.cann_version || '9.1.0.B090' }}
+          ${{ inputs.build_args }}
         provenance: false
         # To speed up the build, we use registry cache. The cache tag is determined by the suffix and architecture, and shared across different workflow runs.
         # For example, the cache tag for arm64 image with suffix "openeuler" will be "buildcache-openeuler-arm64".
