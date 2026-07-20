@@ -58,7 +58,7 @@ on:
         default: ''
         type: string
       build_type:
-        description: 'Build type (release/debug)'
+        description: 'Build type (release/daily)'
         required: false
         default: 'release'
         type: string
