@@ -155,7 +155,7 @@ jobs:
         MEMFABRIC_VERSION=${{ inputs.memfabric_version || '1.2.0' }}
         MEMFABRIC_DATE=${{ inputs.memfabric_date || '20260716.8' }}
         TORCH_NPU_VERSION=${{ inputs.torch_npu_version || '26.1.0' }}
-        TORCH_NPU_DATE="${{ inputs.torch_npu_date || '20260715.4' }}"
+        TORCH_NPU_DATE=${{ inputs.torch_npu_date || '20260715.4' }}
         CANN_QUAY_URL=${{ inputs.cann_quay_url || 'quay.io/canuunac/cann' }}
         CANN_VERSION=${{ inputs.cann_version || '9.1.0.B090' }}
     secrets:
