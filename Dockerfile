@@ -18,7 +18,6 @@ ARG CANN_QUAY_URL="quay.io/canuunac/cann"
 ARG CANN_VERSION="9.1.0.B090"
 FROM ${CANN_QUAY_URL}:${CANN_VERSION}-910b-ubuntu24.04-py3.12
 
-ARG BUILD_TYPE="release"
 ARG PIP_INDEX_URL="https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
 
 WORKDIR /workspace

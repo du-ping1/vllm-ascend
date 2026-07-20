@@ -102,7 +102,6 @@ on:
         required: false
         type: string
         default: '9.1.0.B090'
-      # ===== 新增 Triton 相关参数 =====
       triton_ascend_version:
         description: 'Triton Ascend version'
         required: false
