@@ -57,6 +57,51 @@ on:
         required: false
         default: ''
         type: string
+      build_type:
+        description: 'Build type (release/debug)'
+        required: false
+        default: 'release'
+        type: string
+      memcache_version:
+        description: 'Memcache version'
+        required: false
+        default: '1.2.0'
+        type: string
+      memcache_date:
+        description: 'Memcache date'
+        required: false
+        default: '20260716.5'
+        type: string
+      memfabric_version:
+        description: 'Memfabric version'
+        required: false
+        default: '1.2.0'
+        type: string
+      memfabric_date:
+        description: 'Memfabric date'
+        required: false
+        default: '20260716.8'
+        type: string
+      torch_npu_version:
+        description: 'Torch NPU version'
+        required: false
+        default: '26.1.0'
+        type: string
+      torch_npu_date:
+        description: 'Torch NPU date'
+        required: false
+        default: '20260715.4'
+        type: string
+      cann_quay_url:
+        description: 'CANN Quay URL'
+        required: false
+        default: 'quay.io/canuunac/cann'
+        type: string
+      cann_version:
+        description: 'CANN version'
+        required: false
+        default: '9.1.0.B090'
+        type: string
 
 permissions:
   packages: write
@@ -88,6 +133,12 @@ jobs:
           - name: 310P openEuler
             dockerfile: Dockerfile.310p.openEuler
             suffix: '310p-openeuler'
+          - name: A5 Ubuntu
+            dockerfile: Dockerfile.a5
+            suffix: 'a5'
+          - name: A5 openEuler
+            dockerfile: Dockerfile.a5.openEuler
+            suffix: 'a5-openeuler'
     uses: ./.github/workflows/_schedule_image_build.yaml
     with:
       dockerfile: ${{ matrix.build_meta.dockerfile }}
@@ -97,6 +148,16 @@ jobs:
       should_push: ${{ github.repository_owner == 'vllm-project' && (github.event_name != 'pull_request') }}
       workflow_dispatch_tag: ${{ inputs.tag != 'none' && inputs.tag || '' }}
       branch_ref: ${{ inputs.branch != 'none' && inputs.branch || '' }}
+      build_args: |
+        BUILD_TYPE="${{ inputs.build_type || 'release' }}"
+        MEMCACHE_VERSION="${{ inputs.memcache_version || '1.2.0' }}"
+        MEMCACHE_DATE="${{ inputs.memcache_date || '20260716.5' }}"
+        MEMFABRIC_VERSION="${{ inputs.memfabric_version || '1.2.0' }}"
+        MEMFABRIC_DATE="${{ inputs.memfabric_date || '20260716.8' }}"
+        TORCH_NPU_VERSION="${{ inputs.torch_npu_version || '26.1.0' }}"
+        TORCH_NPU_DATE="${{ inputs.torch_npu_date || '20260715.4' }}"
+        CANN_QUAY_URL="${{ inputs.cann_quay_url || 'quay.io/canuunac/cann' }}"
+        CANN_VERSION="${{ inputs.cann_version || '9.1.0.B090' }}"
     secrets:
       QUAY_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
       QUAY_TEMP_PASSWORD: ${{ secrets.QUAY_TEMP_PASSWORD }}
@@ -129,6 +190,12 @@ jobs:
           - name: 310P openEuler
             dockerfile: Dockerfile.310p.openEuler
             suffix: '310p-openeuler'
+          - name: A5 Ubuntu
+            dockerfile: Dockerfile.a5
+            suffix: 'a5'
+          - name: A5 openEuler
+            dockerfile: Dockerfile.a5.openEuler
+            suffix: 'a5-openeuler'
     uses: ./.github/workflows/_schedule_image_build.yaml
     with:
       dockerfile: ${{ matrix.build_meta.dockerfile }}
@@ -142,5 +209,15 @@ jobs:
       vllm_ascend_commit: ${{ inputs.vllm_ascend_commit }}
       workflow_dispatch_tag: ''
       branch_ref: ''
+      build_args: |
+        BUILD_TYPE="${{ inputs.build_type || 'release' }}"
+        MEMCACHE_VERSION="${{ inputs.memcache_version || '1.2.0' }}"
+        MEMCACHE_DATE="${{ inputs.memcache_date || '20260716.5' }}"
+        MEMFABRIC_VERSION="${{ inputs.memfabric_version || '1.2.0' }}"
+        MEMFABRIC_DATE="${{ inputs.memfabric_date || '20260716.8' }}"
+        TORCH_NPU_VERSION="${{ inputs.torch_npu_version || '26.1.0' }}"
+        TORCH_NPU_DATE="${{ inputs.torch_npu_date || '20260715.4' }}"
+        CANN_QUAY_URL="${{ inputs.cann_quay_url || 'quay.io/canuunac/cann' }}"
+        CANN_VERSION="${{ inputs.cann_version || '9.1.0.B090' }}"
     secrets:
       QUAY_TEMP_PASSWORD: ${{ secrets.QUAY_TEMP_PASSWORD }}
