@@ -86,30 +86,35 @@ ARG MEMFABRIC_VERSION="1.2.0"
 ARG MEMFABRIC_DATE="20260716.8"
 ARG TORCH_NPU_VERSION="26.1.0"
 ARG TORCH_NPU_DATE="20260715.4"
+ARG TRITON_ASCEND_VERSION="26.1.0.B110"
+ARG TRITON_ASCEND_PACKAGE_VERSION="3.2.2"
 
 # Install daily packages only when BUILD_TYPE is set to "daily"
 RUN if [ "$BUILD_TYPE" = "daily" ]; then \
         echo "Building daily version with extra packages..." && \
-        # 3. Install memcache_hybrid based on architecture \
+        echo "Install memcache_hybrid based on architecture..." && \
         if [ "$(uname -m)" = "x86_64" ]; then \
             MEMCACHE_URL="https://obs-memfabric-hybrid.obs.cn-north-4.myhuaweicloud.com/memcache/develop/${MEMCACHE_DATE}/memcache_hybrid-${MEMCACHE_VERSION}-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl"; \
         else \
             MEMCACHE_URL="https://obs-memfabric-hybrid.obs.cn-north-4.myhuaweicloud.com/memcache/develop/${MEMCACHE_DATE}/memcache_hybrid-${MEMCACHE_VERSION}-cp312-cp312-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl"; \
         fi && \
         python3 -m pip install "$MEMCACHE_URL" --force-reinstall && \
-        # 4. Install memfabric_hybrid based on architecture \
+        echo "Install memfabric_hybrid based on architecture..." && \
         if [ "$(uname -m)" = "x86_64" ]; then \
             MEMFABRIC_URL="https://obs-memfabric-hybrid.obs.cn-north-4.myhuaweicloud.com/mf/develop/${MEMFABRIC_DATE}/memfabric_hybrid-${MEMFABRIC_VERSION}-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl"; \
         else \
             MEMFABRIC_URL="https://obs-memfabric-hybrid.obs.cn-north-4.myhuaweicloud.com/mf/develop/${MEMFABRIC_DATE}/memfabric_hybrid-${MEMFABRIC_VERSION}-cp312-cp312-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl"; \
         fi && \
         python3 -m pip install "$MEMFABRIC_URL" --force-reinstall && \
-        # 5. Download, extract and install torch-npu \
-        mkdir -p /tmp/torch_npu \
+		echo "Install triton-ascend..." && \
+		TRITON_ASCEND_URL="https://ascend-cann-open.obs.cn-north-4.myhuaweicloud.com/Triton_Innersource/B_Version/Triton%20Performance%20Optimization%20${TRITON_ASCEND_VERSION}/triton_ascend-${TRITON_ASCEND_PACKAGE_VERSION}-cp312-cp312-manylinux_2_27_$(uname -m).manylinux_2_28_$(uname -m).whl" && \
+		python3 -m pip install "TRITON_ASCEND_URL" --force-reinstall && \
+        echo "Download, extract and install torch-npu..." && \
+        mkdir -p /tmp/torch_npu && \
         wget -O /tmp/torch_npu/torch_npu.tar.gz "https://pytorch-package.obs.cn-north-4.myhuaweicloud.com/pta/Daily/v2.10.0-${TORCH_NPU_VERSION}/${TORCH_NPU_DATE}/pytorch_v2.10.0-${TORCH_NPU_VERSION}_py312.tar.gz" && \
         tar -xzf /tmp/torch_npu/torch_npu.tar.gz -C /tmp/torch_npu && \
         python3 -m pip install /tmp/torch_npu/torch_npu-2.10.0*_$(uname -m).whl --force-reinstall && \
-        # 6. Clean up temporary files \
+        echo "Clean up temporary files..." && \
         rm -rf /tmp/torch_npu; \
     else \
         echo "Building release version without daily packages"; \

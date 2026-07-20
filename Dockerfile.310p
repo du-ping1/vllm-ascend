@@ -112,15 +112,20 @@ RUN echo '#!/bin/bash' > /usr/local/bin/entrypoint.sh && \
 ARG BUILD_TYPE="release"
 ARG TORCH_NPU_VERSION="26.1.0"
 ARG TORCH_NPU_DATE="20260715.4"
+ARG TRITON_ASCEND_VERSION="26.1.0.B110"
+ARG TRITON_ASCEND_PACKAGE_VERSION="3.2.2"
 
 # Install daily packages only when BUILD_TYPE is set to "daily"
 RUN if [ "$BUILD_TYPE" = "daily" ]; then \
-        # 1. Download, extract and install torch-npu \
-        mkdir -p /tmp/torch_npu \
+		echo "Install triton-ascend..." && \
+		TRITON_ASCEND_URL="https://ascend-cann-open.obs.cn-north-4.myhuaweicloud.com/Triton_Innersource/B_Version/Triton%20Performance%20Optimization%20${TRITON_ASCEND_VERSION}/triton_ascend-${TRITON_ASCEND_PACKAGE_VERSION}-cp312-cp312-manylinux_2_27_$(uname -m).manylinux_2_28_$(uname -m).whl" && \
+		python3 -m pip install "TRITON_ASCEND_URL" --force-reinstall && \
+        echo "Download, extract and install torch-npu..." && \
+        mkdir -p /tmp/torch_npu && \
         wget -O /tmp/torch_npu/torch_npu.tar.gz "https://pytorch-package.obs.cn-north-4.myhuaweicloud.com/pta/Daily/v2.10.0-${TORCH_NPU_VERSION}/${TORCH_NPU_DATE}/pytorch_v2.10.0-${TORCH_NPU_VERSION}_py312.tar.gz" && \
         tar -xzf /tmp/torch_npu/torch_npu.tar.gz -C /tmp/torch_npu && \
         python3 -m pip install /tmp/torch_npu/torch_npu-2.10.0*_$(uname -m).whl --force-reinstall && \
-        # 2. Clean up temporary files \
+        echo "Clean up temporary files..." && \
         rm -rf /tmp/torch_npu; \
     else \
         echo "Building release version without daily packages"; \

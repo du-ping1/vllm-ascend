@@ -102,6 +102,17 @@ on:
         required: false
         type: string
         default: '9.1.0.B090'
+      # ===== 新增 Triton 相关参数 =====
+      triton_ascend_version:
+        description: 'Triton Ascend version'
+        required: false
+        type: string
+        default: '26.1.0.B110'
+      triton_ascend_package_version:
+        description: 'Triton Ascend package version'
+        required: false
+        type: string
+        default: '3.2.2'
       build_args:
         description: 'Additional build arguments for Docker build'
         required: false
@@ -308,6 +319,8 @@ jobs:
           TORCH_NPU_DATE=${{ inputs.torch_npu_date || '20260715.4' }}
           CANN_QUAY_URL=${{ inputs.cann_quay_url || 'quay.io/canuunac/cann' }}
           CANN_VERSION=${{ inputs.cann_version || '9.1.0.B090' }}
+          TRITON_ASCEND_VERSION=${{ inputs.triton_ascend_version || '26.1.0.B110' }}
+          TRITON_ASCEND_PACKAGE_VERSION=${{ inputs.triton_ascend_package_version || '3.2.2' }}
           ${{ inputs.build_args }}
         provenance: false
         # To speed up the build, we use registry cache. The cache tag is determined by the suffix and architecture, and shared across different workflow runs.

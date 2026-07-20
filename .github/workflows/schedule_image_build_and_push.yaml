@@ -102,6 +102,16 @@ on:
         required: false
         default: '9.1.0.B090'
         type: string
+      triton_ascend_version:
+        description: 'Triton Ascend version'
+        required: false
+        default: '26.1.0.B110'
+        type: string
+      triton_ascend_package_version:
+        description: 'Triton Ascend package version'
+        required: false
+        default: '3.2.2'
+        type: string
 
 permissions:
   packages: write
@@ -158,6 +168,8 @@ jobs:
         TORCH_NPU_DATE=${{ inputs.torch_npu_date || '20260715.4' }}
         CANN_QUAY_URL=${{ inputs.cann_quay_url || 'quay.io/canuunac/cann' }}
         CANN_VERSION=${{ inputs.cann_version || '9.1.0.B090' }}
+        TRITON_ASCEND_VERSION=${{ inputs.triton_ascend_version || '26.1.0.B110' }}
+        TRITON_ASCEND_PACKAGE_VERSION=${{ inputs.triton_ascend_package_version || '3.2.2' }}
     secrets:
       QUAY_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
       QUAY_TEMP_PASSWORD: ${{ secrets.QUAY_TEMP_PASSWORD }}
@@ -219,5 +231,7 @@ jobs:
         TORCH_NPU_DATE=${{ inputs.torch_npu_date || '20260715.4' }}
         CANN_QUAY_URL=${{ inputs.cann_quay_url || 'quay.io/canuunac/cann' }}
         CANN_VERSION=${{ inputs.cann_version || '9.1.0.B090' }}
+        TRITON_ASCEND_VERSION=${{ inputs.triton_ascend_version || '26.1.0.B110' }}
+        TRITON_ASCEND_PACKAGE_VERSION=${{ inputs.triton_ascend_package_version || '3.2.2' }}
     secrets:
       QUAY_TEMP_PASSWORD: ${{ secrets.QUAY_TEMP_PASSWORD }}
