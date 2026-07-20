@@ -1,212 +1,119 @@
-# This is a docker build check and publish job:
-# 1. PR Triggered docker image build check
-#   - 'image-build' label should be added
-#   - is for image build check
-#   - Enable on main/releases branch
-#   - push: ${{ github.event_name != 'pull_request' }} ==> false
-# 2. branches push trigger image publish
-#   - is for branch/dev/nightly image
-#   - commits are merge into main/*-dev  ==> vllm-ascend:main / vllm-ascend:*-dev
-# 3. tags push trigger image publish
-#   - is for final release image
-#   - Publish when tag with v* (pep440 version)  ===>  vllm-ascend:v1.2.3 / vllm-ascend:v1.2.3rc1
-name: Image Build and Push
-on:
-  push:
-    tags:
-      - 'v*'
-  pull_request: 
-    branches:
-      - 'main'
-      - 'releases/*'
-    types: [ labeled ]
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Docker tag for build results (mutually exclusive with branch)'
-        default: "none"
-        required: false
-        type: choice
-        options:
-          - main
-          - v0.23.0rc1
-          - v0.22.1rc1
-          - v0.21.0rc1
-          - v0.20.2rc1
-          - none
-      branch:
-        description: 'Docker branch for build results (mutually exclusive with tag)'
-        default: "none"
-        required: false
-        type: choice
-        options:
-          - main
-          - releases/v0.23.0
-          - releases/v0.22.1rc
-          - releases/v0.21.0rc
-          - releases/v0.20.2rc
-          - releases/v0.18.0
-          - none
-      vllm_commit:
-        description: 'vLLM commit hash (must be paired with vllm_ascend_commit; mutually exclusive with tag/branch). Image will be pushed only to QUAY_TEMP_USERNAME.'
-        required: false
-        default: ''
-        type: string
-      vllm_ascend_commit:
-        description: 'vllm-ascend commit hash (must be paired with vllm_commit; mutually exclusive with tag/branch). Image will be pushed only to QUAY_TEMP_USERNAME.'
-        required: false
-        default: ''
-        type: string
-      # ===== 新增：Docker构建参数（可外部传入） =====
-      build_type:
-        description: 'Build type (release/debug)'
-        required: false
-        default: 'release'
-        type: string
-      memcache_version:
-        description: 'Memcache version'
-        required: false
-        default: '1.2.0'
-        type: string
-      memcache_date:
-        description: 'Memcache date'
-        required: false
-        default: '20260716.5'
-        type: string
-      memfabric_version:
-        description: 'Memfabric version'
-        required: false
-        default: '1.2.0'
-        type: string
-      memfabric_date:
-        description: 'Memfabric date'
-        required: false
-        default: '20260716.8'
-        type: string
-      torch_npu_version:
-        description: 'Torch NPU version'
-        required: false
-        default: '26.1.0'
-        type: string
-      torch_npu_date:
-        description: 'Torch NPU date'
-        required: false
-        default: '20260715.4'
-        type: string
-      cann_quay_url:
-        description: 'CANN Quay URL'
-        required: false
-        default: 'quay.io/canuunac/cann'
-        type: string
-      cann_version:
-        description: 'CANN version'
-        required: false
-        default: '9.1.0.B090'
-        type: string
+#
+# Copyright (c) 2025 Huawei Technologies Co., Ltd. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# This file is a part of the vllm-ascend project.
+#
 
-permissions:
-  packages: write
-  contents: read
+ARG CANN_QUAY_URL="quay.io/canuunac/cann"
+ARG CANN_VERSION="9.1.0.B090"
+FROM ${CANN_QUAY_URL}:${CANN_VERSION}-a3-ubuntu24.04-py3.12
 
-jobs:
-  image_build:
-    name: Image Build and Push
-    if: ${{ !((github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'image-build')))
-        && !(github.event_name == 'workflow_dispatch' && inputs.vllm_commit != '' && inputs.vllm_ascend_commit != '') }}
-    strategy:
-      matrix:
-        build_meta:
-          - name: A2 Ubuntu
-            dockerfile: Dockerfile
-            suffix: ''
-          - name: A2 openeuler
-            dockerfile: Dockerfile.openEuler
-            suffix: 'openeuler'
-          - name: A3 Ubuntu
-            dockerfile: Dockerfile.a3
-            suffix: 'a3'
-          - name: A3 openEuler
-            dockerfile: Dockerfile.a3.openEuler
-            suffix: 'a3-openeuler'
-          - name: 310P Ubuntu
-            dockerfile: Dockerfile.310p
-            suffix: '310p'
-          - name: 310P openEuler
-            dockerfile: Dockerfile.310p.openEuler
-            suffix: '310p-openeuler'
-    uses: ./.github/workflows/_schedule_image_build.yaml
-    with:
-      dockerfile: ${{ matrix.build_meta.dockerfile }}
-      suffix: ${{ matrix.build_meta.suffix }}
-      quay_username: ${{ vars.QUAY_USERNAME }}
-      quay_temp_username: ${{ vars.QUAY_TEMP_USERNAME }}
-      should_push: ${{ github.repository_owner == 'vllm-project' && (github.event_name != 'pull_request') }}
-      workflow_dispatch_tag: ${{ inputs.tag != 'none' && inputs.tag || '' }}
-      branch_ref: ${{ inputs.branch != 'none' && inputs.branch || '' }}
-      build_args: |
-        BUILD_TYPE="${{ inputs.build_type || 'release' }}"
-        MEMCACHE_VERSION="${{ inputs.memcache_version || '1.2.0' }}"
-        MEMCACHE_DATE="${{ inputs.memcache_date || '20260716.5' }}"
-        MEMFABRIC_VERSION="${{ inputs.memfabric_version || '1.2.0' }}"
-        MEMFABRIC_DATE="${{ inputs.memfabric_date || '20260716.8' }}"
-        TORCH_NPU_VERSION="${{ inputs.torch_npu_version || '26.1.0' }}"
-        TORCH_NPU_DATE="${{ inputs.torch_npu_date || '20260715.4' }}"
-        CANN_QUAY_URL="${{ inputs.cann_quay_url || 'quay.io/canuunac/cann' }}"
-        CANN_VERSION="${{ inputs.cann_version || '9.1.0.B090' }}"
-    secrets:
-      QUAY_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
-      QUAY_TEMP_PASSWORD: ${{ secrets.QUAY_TEMP_PASSWORD }}
+ARG PIP_INDEX_URL="https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
 
-  image_build_by_commit:
-    name: Image Build (commit mode) and Push to QUAY_TEMP
-    if: ${{ github.event_name == 'workflow_dispatch'
-        && inputs.vllm_commit != ''
-        && inputs.vllm_ascend_commit != ''
-        && inputs.tag == 'none'
-        && inputs.branch == 'none' }}
-    strategy:
-      matrix:
-        build_meta:
-          - name: A2 Ubuntu
-            dockerfile: Dockerfile
-            suffix: ''
-          - name: A2 openeuler
-            dockerfile: Dockerfile.openEuler
-            suffix: 'openeuler'
-          - name: A3 Ubuntu
-            dockerfile: Dockerfile.a3
-            suffix: 'a3'
-          - name: A3 openEuler
-            dockerfile: Dockerfile.a3.openEuler
-            suffix: 'a3-openeuler'
-          - name: 310P Ubuntu
-            dockerfile: Dockerfile.310p
-            suffix: '310p'
-          - name: 310P openEuler
-            dockerfile: Dockerfile.310p.openEuler
-            suffix: '310p-openeuler'
-    uses: ./.github/workflows/_schedule_image_build.yaml
-    with:
-      dockerfile: ${{ matrix.build_meta.dockerfile }}
-      suffix: ${{ matrix.build_meta.suffix }}
-      quay_temp_username: ${{ vars.QUAY_TEMP_USERNAME }}
-      # Commit mode always pushes (to QUAY_TEMP_REPO only) and never promotes
-      # the image to QUAY_REPO via merge-image, so quay_username is intentionally omitted.
-      should_push: true
-      temp_only: true
-      vllm_commit: ${{ inputs.vllm_commit }}
-      vllm_ascend_commit: ${{ inputs.vllm_ascend_commit }}
-      workflow_dispatch_tag: ''
-      branch_ref: ''
-      build_args: |
-        BUILD_TYPE="${{ inputs.build_type || 'release' }}"
-        MEMCACHE_VERSION="${{ inputs.memcache_version || '1.2.0' }}"
-        MEMCACHE_DATE="${{ inputs.memcache_date || '20260716.5' }}"
-        MEMFABRIC_VERSION="${{ inputs.memfabric_version || '1.2.0' }}"
-        MEMFABRIC_DATE="${{ inputs.memfabric_date || '20260716.8' }}"
-        TORCH_NPU_VERSION="${{ inputs.torch_npu_version || '26.1.0' }}"
-        TORCH_NPU_DATE="${{ inputs.torch_npu_date || '20260715.4' }}"
-        CANN_QUAY_URL="${{ inputs.cann_quay_url || 'quay.io/canuunac/cann' }}"
-        CANN_VERSION="${{ inputs.cann_version || '9.1.0.B090' }}"
-    secrets:
-      QUAY_TEMP_PASSWORD: ${{ secrets.QUAY_TEMP_PASSWORD }}
+ENV DEBIAN_FRONTEND=noninteractive
+
+WORKDIR /workspace
+
+# Install clang-15 (for triton-ascend) and Mooncake
+ARG MOONCAKE_TAG=0.3.11.post1
+RUN apt-get update -y && \
+    apt-get install -y git vim wget net-tools gcc g++ cmake numactl libnuma-dev libibverbs-dev libjemalloc2 libhiredis-dev clang-15 && \
+    update-alternatives --install /usr/bin/clang clang /usr/bin/clang-15 20 && \
+    update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-15 20 && \
+    source /usr/local/Ascend/ascend-toolkit/set_env.sh && \
+    python3 -m pip install mooncake-transfer-engine-npu==${MOONCAKE_TAG} --extra-index-url https://mirrors.aliyun.com/pypi/web/simple && \
+    rm -rf /var/cache/apt/* && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install modelscope (for fast download) and ray (for multinode)
+RUN pip config set global.index-url ${PIP_INDEX_URL} && \
+    python3 -m pip install modelscope 'ray>=2.47.1,<=2.48.0' 'protobuf>3.20.0' && \
+    python3 -m pip cache purge
+
+# Install vLLM
+ARG VLLM_REPO=https://github.com/vllm-project/vllm.git
+ARG VLLM_TAG=v0.24.0
+ARG VLLM_COMMIT=""
+RUN if [ -n "$VLLM_COMMIT" ]; then \
+      git init /vllm-workspace/vllm && \
+      git -C /vllm-workspace/vllm fetch --depth 1 $VLLM_REPO "$VLLM_COMMIT" && \
+      git -C /vllm-workspace/vllm checkout FETCH_HEAD; \
+    else \
+      git clone --depth 1 -b $VLLM_TAG $VLLM_REPO /vllm-workspace/vllm; \
+    fi
+# In x86, triton will be installed by vllm. But in Ascend, triton doesn't work correctly. we need to uninstall it.
+RUN VLLM_TARGET_DEVICE="empty" python3 -m pip install -e /vllm-workspace/vllm/[audio] --extra-index https://download.pytorch.org/whl/cpu/ && \
+    python3 -m pip uninstall -y triton && \
+    python3 -m pip cache purge
+
+# Install vllm-ascend
+ARG SOC_VERSION="ascend910_9391"
+ARG COMPILE_CUSTOM_KERNELS=1
+ENV DEBIAN_FRONTEND=noninteractive
+ENV SOC_VERSION=$SOC_VERSION \
+    TASK_QUEUE_ENABLE=1 \
+    OMP_NUM_THREADS=1
+COPY . /vllm-workspace/vllm-ascend/
+
+RUN export PIP_EXTRA_INDEX_URL="https://mirrors.huaweicloud.com/ascend/repos/pypi" && \
+    export VLLM_BATCH_INVARIANT=1 && \
+    source /usr/local/Ascend/ascend-toolkit/set_env.sh && \
+    source /usr/local/Ascend/nnal/atb/set_env.sh && \
+    python3 -m pip install -e /vllm-workspace/vllm-ascend/ --extra-index https://download.pytorch.org/whl/cpu/ && \
+    python3 -m pip uninstall -y triton triton-ascend && \
+    python3 -m pip install triton-ascend==3.2.1 --extra-index-url https://mirrors.huaweicloud.com/ascend/repos/pypi && \
+    python3 -m pip cache purge
+
+# Append `libascend_hal.so` path (devlib) to LD_LIBRARY_PATH
+RUN echo "export LD_PRELOAD=/usr/lib/$(uname -m)-linux-gnu/libjemalloc.so.2:$LD_PRELOAD" >> ~/.bashrc
+RUN echo "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib" >> ~/.bashrc
+
+# ===== Conditional installation based on BUILD_TYPE =====
+# All ARG definitions are in the same stage for better maintainability
+ARG BUILD_TYPE="release"
+ARG MEMCACHE_VERSION="1.2.0"
+ARG MEMCACHE_DATE="20260716.5"
+ARG MEMFABRIC_VERSION="1.2.0"
+ARG MEMFABRIC_DATE="20260716.8"
+ARG TORCH_NPU_VERSION="26.1.0"
+ARG TORCH_NPU_DATE="20260715.4"
+
+# Install daily packages only when BUILD_TYPE is set to "daily"
+RUN if [ "$BUILD_TYPE" = "daily" ]; then \
+        echo "Building daily version with extra packages..." && \
+        # 3. Install memcache_hybrid based on architecture \
+        if [ "$(uname -m)" = "x86_64" ]; then \
+            MEMCACHE_URL="https://obs-memfabric-hybrid.obs.cn-north-4.myhuaweicloud.com/memcache/develop/${MEMCACHE_DATE}/memcache_hybrid-${MEMCACHE_VERSION}-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl"; \
+        else \
+            MEMCACHE_URL="https://obs-memfabric-hybrid.obs.cn-north-4.myhuaweicloud.com/memcache/develop/${MEMCACHE_DATE}/memcache_hybrid-${MEMCACHE_VERSION}-cp312-cp312-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl"; \
+        fi && \
+        python3 -m pip install "$MEMCACHE_URL" --force-reinstall && \
+        # 4. Install memfabric_hybrid based on architecture \
+        if [ "$(uname -m)" = "x86_64" ]; then \
+            MEMFABRIC_URL="https://obs-memfabric-hybrid.obs.cn-north-4.myhuaweicloud.com/mf/develop/${MEMFABRIC_DATE}/memfabric_hybrid-${MEMFABRIC_VERSION}-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl"; \
+        else \
+            MEMFABRIC_URL="https://obs-memfabric-hybrid.obs.cn-north-4.myhuaweicloud.com/mf/develop/${MEMFABRIC_DATE}/memfabric_hybrid-${MEMFABRIC_VERSION}-cp312-cp312-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl"; \
+        fi && \
+        python3 -m pip install "$MEMFABRIC_URL" --force-reinstall && \
+        # 5. Download, extract and install torch-npu \
+        wget -O /tmp/torch_npu.tar.gz "https://pytorch-package.obs.cn-north-4.myhuaweicloud.com/pta/Daily/v2.10.0-${TORCH_NPU_VERSION}/${TORCH_NPU_DATE}/pytorch_v2.10.0-${TORCH_NPU_VERSION}_py312.tar.gz" && \
+        tar -xzf /tmp/torch_npu.tar.gz -C /tmp && \
+        python3 -m pip install /tmp/pytorch_v2.10.0-${TORCH_NPU_VERSION}_py312/torch_npu-2.10.0*_$(uname -m).whl --force-reinstall && \
+        # 6. Clean up temporary files \
+        rm -rf /tmp/torch_npu.tar.gz /tmp/pytorch_v2.10.0-${TORCH_NPU_VERSION}_py312; \
+    else \
+        echo "Building release version without daily packages"; \
+    fi
+
+CMD ["/bin/bash"]
