@@ -114,7 +114,7 @@ on:
 env:
   QUAY_REPO: quay.io/mindie_ci/vllm-ascend
   QUAY_TEMP_REPO: quay.io/mindie_ci/vllm-atlas-temp
-  CACHE_REPO: ghcr.io/vllm-project/vllm-ascend
+  CACHE_REPO: ghcr.io/du-ping1/vllm-ascend
 
 jobs:
   build-push-digest:
