@@ -105,7 +105,9 @@ jobs:
 
       - name: Persist base_image (if changed from cache)
         id: persist
+        continue-on-error: true
         run: |
+          set +e
           BASE_IMAGE="${{ steps.resolve.outputs.base_image }}"
           PERSISTED_FILE=".github/.base_image_cache"
           mkdir -p .github
@@ -118,7 +120,6 @@ jobs:
           # Skip commit if content is the same
           if [ "${CURRENT_VALUE}" = "${BASE_IMAGE}" ]; then
             echo "Cache already has the same value: ${BASE_IMAGE}, skipping commit"
-            echo "skipped=true" >> $GITHUB_OUTPUT
             exit 0
           fi
           
@@ -127,10 +128,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add "${PERSISTED_FILE}"
-          git commit -m "chore: update base_image cache to ${BASE_IMAGE} [skip ci]" || true
-          git push || true
+          git commit -m "chore: update base_image cache to ${BASE_IMAGE} [skip ci]"
+          git push
           echo "Persisted base_image: ${BASE_IMAGE}"
-          echo "skipped=false" >> $GITHUB_OUTPUT
 
   # Second job: actual build
   build-cache:
