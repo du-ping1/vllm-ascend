@@ -62,7 +62,7 @@ jobs:
         run: |
           BRANCH_TAG="${{ inputs.vllm_ascend_branch }}"
           BRANCH_TAG="${BRANCH_TAG//\//-}"
-          IMAGE="swr.cn-north-4.myhuaweicloud.com/inference/ci-test/vllm-ascend:nightly-ci-${BRANCH_TAG}-${{ inputs.target }}"
+          IMAGE="swr.cn-north-4.myhuaweicloud.com/inference/vllm-ascend:nightly-ci-${BRANCH_TAG}-${{ inputs.target }}"
           docker build \
             --network host \
             --platform linux/arm64 \
@@ -77,4 +77,4 @@ jobs:
         run: |
           BRANCH_TAG="${{ inputs.vllm_ascend_branch }}"
           BRANCH_TAG="${BRANCH_TAG//\//-}"
-          docker push swr.cn-north-4.myhuaweicloud.com/inference/ci-test/vllm-ascend:nightly-ci-${BRANCH_TAG}-${{ inputs.target }}
+          docker push swr.cn-north-4.myhuaweicloud.com/inference/vllm-ascend:nightly-ci-${BRANCH_TAG}-${{ inputs.target }}
