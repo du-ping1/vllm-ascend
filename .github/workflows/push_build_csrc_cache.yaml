@@ -28,13 +28,8 @@ on:
       - 'cmake/**'
       - .github/workflows/push_build_csrc_cache.yaml
       - 'pyproject.toml'
+  # 手动触发，此时使用下方 env 中定义的 BASE_IMAGE
   workflow_dispatch:
-    inputs:
-      base_image:
-        description: 'Base image prefix (e.g., quay.io/canuunac/cann:9.1.0.B090)'
-        required: false
-        default: 'quay.io/canuunac/cann:9.1.0.B090'
-        type: string
 
 defaults:
   run:
@@ -45,6 +40,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  # 在这里定义基础镜像地址，需要更换时修改此处即可
+  BASE_IMAGE: 'quay.io/canuunac/cann:9.1.0.B090'
   UV_INDEX_URL: http://cache-service.nginx-pypi-cache.svc.cluster.local/pypi/simple
   UV_EXTRA_INDEX_URL: "https://repo.huaweicloud.com/ascend/repos/pypi http://cache-service.nginx-pypi-cache.svc.cluster.local/whl/cpu"
   UV_INDEX_STRATEGY: unsafe-best-match
@@ -72,59 +69,52 @@ jobs:
           - openeuler
 
         include:
-          # chip_type x os → image_suffix + soc_version
+          # chip_type x os → 完整的 image + soc_version
           - chip_type: a2
             os: ubuntu
-            image_suffix: '-910b-ubuntu24.04-py3.12'
+            image: ${{ env.BASE_IMAGE }}-910b-ubuntu24.04-py3.12
             soc_version: ascend910b1
 
           - chip_type: a3
             os: ubuntu
-            image_suffix: '-a3-ubuntu24.04-py3.12'
+            image: ${{ env.BASE_IMAGE }}-a3-ubuntu24.04-py3.12
             soc_version: ascend910_9391
 
           - chip_type: 310p
             os: ubuntu
-            image_suffix: '-310p-ubuntu24.04-py3.12'
+            image: ${{ env.BASE_IMAGE }}-310p-ubuntu24.04-py3.12
             soc_version: ascend310p1
 
           - chip_type: a2
             os: openeuler
-            image_suffix: '-910b-openeuler24.03-lts-sp4-py3.12'
+            image: ${{ env.BASE_IMAGE }}-910b-openeuler24.03-lts-sp4-py3.12
             soc_version: ascend910b1
 
           - chip_type: a3
             os: openeuler
-            image_suffix: '-a3-openeuler24.03-lts-sp4-py3.12'
+            image: ${{ env.BASE_IMAGE }}-a3-openeuler24.03-lts-sp4-py3.12
             soc_version: ascend910_9391
 
           - chip_type: 310p
             os: openeuler
-            image_suffix: '-310p-openeuler24.03-lts-sp4-py3.12'
+            image: ${{ env.BASE_IMAGE }}-310p-openeuler24.03-lts-sp4-py3.12
             soc_version: ascend310p1
 
           # a5 chip_type mappings
           - chip_type: a5
             os: ubuntu
-            image_suffix: '-a5-ubuntu24.04-py3.12'
-            soc_version: ascend950dt_9582  # FIXME: replace with actual soc_version for a5
+            image: ${{ env.BASE_IMAGE }}-a5-ubuntu24.04-py3.12
+            soc_version: ascend950dt_9582
 
           - chip_type: a5
             os: openeuler
-            image_suffix: '-a5-openeuler24.03-lts-sp4-py3.12'
-            soc_version: ascend950dt_9582  # FIXME: replace with actual soc_version for a5
+            image: ${{ env.BASE_IMAGE }}-a5-openeuler24.03-lts-sp4-py3.12
+            soc_version: ascend950dt_9582
 
     container:
-      image: ${{ steps.assemble_image.outputs.full_image }}
+      # 直接使用矩阵中定义好的完整镜像地址
+      image: ${{ matrix.image }}
     steps:
-      - name: Assemble full image
-        id: assemble_image
-        run: |
-          BASE_IMAGE="${{ github.event.inputs.base_image || 'quay.io/canuunac/cann:9.1.0.B090' }}"
-          SUFFIX="${{ matrix.image_suffix }}"
-          FULL_IMAGE="${BASE_IMAGE}${SUFFIX}"
-          echo "full_image=${FULL_IMAGE}" >> $GITHUB_OUTPUT
-
       - name: Checkout repo
         uses: actions/checkout@v7
         with:
@@ -167,7 +157,7 @@ jobs:
       - name: Get image tag
         id: get_image_tag
         run: |
-          IMAGE="${{ steps.assemble_image.outputs.full_image }}"
+          IMAGE="${{ matrix.image }}"
           IMAGE_TAG="${IMAGE##*:}"
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_OUTPUT
 
