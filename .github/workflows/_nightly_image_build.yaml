@@ -54,8 +54,7 @@ jobs:
           HW_USERNAME: ${{ secrets.HW_USERNAME }}
           HW_TOKEN: ${{ secrets.HW_TOKEN }}
         run: |
-          echo "$HW_TOKEN" | docker login -u "$HW_USERNAME" --password-stdin swr.cn-north-4.myhuaweicloud.com
-
+          echo "$HW_TOKEN" | docker login -u cn-north-4@"$HW_USERNAME" -p "$HW_TOKEN" swr.cn-north-4.myhuaweicloud.com
       - name: Build nightly-${{ inputs.target }} image
         env:
           GITEE_USERNAME: ${{ vars.GITEE_USERNAME }}
