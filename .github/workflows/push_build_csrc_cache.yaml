@@ -28,8 +28,12 @@ on:
       - 'cmake/**'
       - .github/workflows/push_build_csrc_cache.yaml
       - 'pyproject.toml'
-  # 手动触发，此时使用下方 env 中定义的 BASE_IMAGE
   workflow_dispatch:
+    inputs:
+      base_image:
+        description: 'Base image prefix (e.g., quay.io/canuunac/cann:9.1.0.B090)'
+        required: false
+        type: string
 
 defaults:
   run:
@@ -40,8 +44,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # 在这里定义基础镜像地址，需要更换时修改此处即可
-  BASE_IMAGE: 'quay.io/canuunac/cann:9.1.0.B090'
+  # 默认值（当没有任何参数时使用）
+  DEFAULT_BASE_IMAGE: 'quay.io/canuunac/cann:9.1.0.B090'
   UV_INDEX_URL: http://cache-service.nginx-pypi-cache.svc.cluster.local/pypi/simple
   UV_EXTRA_INDEX_URL: "https://repo.huaweicloud.com/ascend/repos/pypi http://cache-service.nginx-pypi-cache.svc.cluster.local/whl/cpu"
   UV_INDEX_STRATEGY: unsafe-best-match
@@ -51,8 +55,84 @@ env:
   UV_SYSTEM_PYTHON: 1
 
 jobs:
+  # 第一个 job：解析和管理参数
+  prepare:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # 用于更新文件
+    outputs:
+      base_image: ${{ steps.resolve.outputs.base_image }}
+      changed: ${{ steps.resolve.outputs.changed }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve base_image
+        id: resolve
+        run: |
+          # 读取当前存储的持久化值
+          PERSISTED_FILE=".github/.base_image_cache"
+          PERSISTED_VALUE=""
+          if [ -f "${PERSISTED_FILE}" ]; then
+            PERSISTED_VALUE=$(cat "${PERSISTED_FILE}")
+            echo "Persisted value: ${PERSISTED_VALUE}"
+          fi
+
+          # 优先级：手动输入 > 当前 push 的 commit 标记 > 持久化值 > 默认值
+          # 1. 检查 workflow_dispatch 输入
+          if [ -n "${{ github.event.inputs.base_image }}" ]; then
+            BASE_IMAGE="${{ github.event.inputs.base_image }}"
+            echo "Using base_image from manual input: ${BASE_IMAGE}"
+            CHANGED="true"
+          else
+            # 2. 检查 commit message 中的标记
+            COMMIT_MSG=$(git log -1 --pretty=%B)
+            MATCH=$(echo "${COMMIT_MSG}" | grep -oP '\[base_image=\K[^\]]+' || true)
+            if [ -n "${MATCH}" ]; then
+              BASE_IMAGE="${MATCH}"
+              echo "Using base_image from commit message: ${BASE_IMAGE}"
+              CHANGED="true"
+            else
+              # 3. 使用持久化值
+              if [ -n "${PERSISTED_VALUE}" ]; then
+                BASE_IMAGE="${PERSISTED_VALUE}"
+                echo "Using base_image from persisted cache: ${BASE_IMAGE}"
+                CHANGED="false"
+              else
+                # 4. 使用默认值
+                BASE_IMAGE="${{ env.DEFAULT_BASE_IMAGE }}"
+                echo "Using default base_image: ${BASE_IMAGE}"
+                CHANGED="true"
+              fi
+            fi
+          fi
+
+          echo "base_image=${BASE_IMAGE}" >> $GITHUB_OUTPUT
+          echo "changed=${CHANGED}" >> $GITHUB_OUTPUT
+
+      - name: Persist base_image (if changed)
+        if: steps.resolve.outputs.changed == 'true'
+        run: |
+          BASE_IMAGE="${{ steps.resolve.outputs.base_image }}"
+          PERSISTED_FILE=".github/.base_image_cache"
+          mkdir -p .github
+          echo "${BASE_IMAGE}" > "${PERSISTED_FILE}"
+          
+          # 提交并推送变更
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "${PERSISTED_FILE}"
+          git commit -m "chore: update base_image cache to ${BASE_IMAGE} [skip ci]"
+          git push
+          echo "Persisted base_image: ${BASE_IMAGE}"
+
+  # 第二个 job：真正的构建
   build-cache:
     name: build-${{ matrix.chip_type }}-${{ matrix.runner }}-${{ matrix.os }}-cache
+    needs: prepare
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -69,50 +149,47 @@ jobs:
           - openeuler
 
         include:
-          # chip_type x os → 完整的 image + soc_version
           - chip_type: a2
             os: ubuntu
-            image: ${{ env.BASE_IMAGE }}-910b-ubuntu24.04-py3.12
+            image: ${{ needs.prepare.outputs.base_image }}-910b-ubuntu24.04-py3.12
             soc_version: ascend910b1
 
           - chip_type: a3
             os: ubuntu
-            image: ${{ env.BASE_IMAGE }}-a3-ubuntu24.04-py3.12
+            image: ${{ needs.prepare.outputs.base_image }}-a3-ubuntu24.04-py3.12
             soc_version: ascend910_9391
 
           - chip_type: 310p
             os: ubuntu
-            image: ${{ env.BASE_IMAGE }}-310p-ubuntu24.04-py3.12
+            image: ${{ needs.prepare.outputs.base_image }}-310p-ubuntu24.04-py3.12
             soc_version: ascend310p1
 
           - chip_type: a2
             os: openeuler
-            image: ${{ env.BASE_IMAGE }}-910b-openeuler24.03-lts-sp4-py3.12
+            image: ${{ needs.prepare.outputs.base_image }}-910b-openeuler24.03-lts-sp4-py3.12
             soc_version: ascend910b1
 
           - chip_type: a3
             os: openeuler
-            image: ${{ env.BASE_IMAGE }}-a3-openeuler24.03-lts-sp4-py3.12
+            image: ${{ needs.prepare.outputs.base_image }}-a3-openeuler24.03-lts-sp4-py3.12
             soc_version: ascend910_9391
 
           - chip_type: 310p
             os: openeuler
-            image: ${{ env.BASE_IMAGE }}-310p-openeuler24.03-lts-sp4-py3.12
+            image: ${{ needs.prepare.outputs.base_image }}-310p-openeuler24.03-lts-sp4-py3.12
             soc_version: ascend310p1
 
-          # a5 chip_type mappings
           - chip_type: a5
             os: ubuntu
-            image: ${{ env.BASE_IMAGE }}-a5-ubuntu24.04-py3.12
+            image: ${{ needs.prepare.outputs.base_image }}-a5-ubuntu24.04-py3.12
             soc_version: ascend950dt_9582
 
           - chip_type: a5
             os: openeuler
-            image: ${{ env.BASE_IMAGE }}-a5-openeuler24.03-lts-sp4-py3.12
+            image: ${{ needs.prepare.outputs.base_image }}-a5-openeuler24.03-lts-sp4-py3.12
             soc_version: ascend950dt_9582
 
     container:
-      # 直接使用矩阵中定义好的完整镜像地址
       image: ${{ matrix.image }}
     steps:
       - name: Checkout repo
@@ -205,9 +282,6 @@ jobs:
           fi
 
           pip install uc-manager
-          # NOTE: indexes (ascend repo for triton-ascend + pytorch cpu whl) come from
-          # UV_EXTRA_INDEX_URL. Do not pass --extra-index-url on the CLI here: it overrides
-          # (does not append to) the env var and would drop the ascend repo.
           uv pip install -r requirements-dev.txt
           uv pip install --force-reinstall --no-deps triton-ascend==3.2.1
           uv pip install -e .
