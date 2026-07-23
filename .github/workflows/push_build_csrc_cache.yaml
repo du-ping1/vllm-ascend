@@ -44,7 +44,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # 默认值（当没有任何参数时使用）
+  # Default value (used when no parameter is provided)
   DEFAULT_BASE_IMAGE: 'quay.io/canuunac/cann:9.1.0.B090'
   UV_INDEX_URL: http://cache-service.nginx-pypi-cache.svc.cluster.local/pypi/simple
   UV_EXTRA_INDEX_URL: "https://repo.huaweicloud.com/ascend/repos/pypi http://cache-service.nginx-pypi-cache.svc.cluster.local/whl/cpu"
@@ -55,14 +55,13 @@ env:
   UV_SYSTEM_PYTHON: 1
 
 jobs:
-  # 第一个 job：解析和管理参数
+  # First job: parse and persist parameters
   prepare:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # 用于更新文件
+      contents: write
     outputs:
       base_image: ${{ steps.resolve.outputs.base_image }}
-      changed: ${{ steps.resolve.outputs.changed }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v7
@@ -73,7 +72,7 @@ jobs:
       - name: Resolve base_image
         id: resolve
         run: |
-          # 读取当前存储的持久化值
+          # Read current persisted value
           PERSISTED_FILE=".github/.base_image_cache"
           PERSISTED_VALUE=""
           if [ -f "${PERSISTED_FILE}" ]; then
@@ -81,47 +80,48 @@ jobs:
             echo "Persisted value: ${PERSISTED_VALUE}"
           fi
 
-          # 优先级：手动输入 > 当前 push 的 commit 标记 > 持久化值 > 默认值
-          # 1. 检查 workflow_dispatch 输入
+          # Priority: manual input > commit message tag > persisted value > default
           if [ -n "${{ github.event.inputs.base_image }}" ]; then
             BASE_IMAGE="${{ github.event.inputs.base_image }}"
             echo "Using base_image from manual input: ${BASE_IMAGE}"
-            CHANGED="true"
           else
-            # 2. 检查 commit message 中的标记
             COMMIT_MSG=$(git log -1 --pretty=%B)
             MATCH=$(echo "${COMMIT_MSG}" | grep -oP '\[base_image=\K[^\]]+' || true)
             if [ -n "${MATCH}" ]; then
               BASE_IMAGE="${MATCH}"
               echo "Using base_image from commit message: ${BASE_IMAGE}"
-              CHANGED="true"
             else
-              # 3. 使用持久化值
               if [ -n "${PERSISTED_VALUE}" ]; then
                 BASE_IMAGE="${PERSISTED_VALUE}"
                 echo "Using base_image from persisted cache: ${BASE_IMAGE}"
-                CHANGED="false"
               else
-                # 4. 使用默认值
                 BASE_IMAGE="${{ env.DEFAULT_BASE_IMAGE }}"
                 echo "Using default base_image: ${BASE_IMAGE}"
-                CHANGED="true"
               fi
             fi
           fi
 
           echo "base_image=${BASE_IMAGE}" >> $GITHUB_OUTPUT
-          echo "changed=${CHANGED}" >> $GITHUB_OUTPUT
 
-      - name: Persist base_image (if changed)
-        if: steps.resolve.outputs.changed == 'true'
+      - name: Persist base_image (if changed from cache)
         run: |
           BASE_IMAGE="${{ steps.resolve.outputs.base_image }}"
           PERSISTED_FILE=".github/.base_image_cache"
           mkdir -p .github
+          
+          CURRENT_VALUE=""
+          if [ -f "${PERSISTED_FILE}" ]; then
+            CURRENT_VALUE=$(cat "${PERSISTED_FILE}")
+          fi
+          
+          # Skip commit if content is the same
+          if [ "${CURRENT_VALUE}" = "${BASE_IMAGE}" ]; then
+            echo "Cache already has the same value: ${BASE_IMAGE}, skipping commit"
+            exit 0
+          fi
+          
           echo "${BASE_IMAGE}" > "${PERSISTED_FILE}"
           
-          # 提交并推送变更
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add "${PERSISTED_FILE}"
@@ -129,7 +129,7 @@ jobs:
           git push
           echo "Persisted base_image: ${BASE_IMAGE}"
 
-  # 第二个 job：真正的构建
+  # Second job: actual build
   build-cache:
     name: build-${{ matrix.chip_type }}-${{ matrix.runner }}-${{ matrix.os }}-cache
     needs: prepare
@@ -282,6 +282,9 @@ jobs:
           fi
 
           pip install uc-manager
+          # NOTE: indexes (ascend repo for triton-ascend + pytorch cpu whl) come from
+          # UV_EXTRA_INDEX_URL. Do not pass --extra-index-url on the CLI here: it overrides
+          # (does not append to) the env var and would drop the ascend repo.
           uv pip install -r requirements-dev.txt
           uv pip install --force-reinstall --no-deps triton-ascend==3.2.1
           uv pip install -e .
