@@ -184,12 +184,12 @@ jobs:
 
           - chip_type: a5
             os: ubuntu
-            image: ${{ needs.prepare.outputs.base_image }}-a5-ubuntu24.04-py3.12
+            image: ${{ needs.prepare.outputs.base_image }}-950-ubuntu24.04-py3.12
             soc_version: ascend950dt_9582
 
           - chip_type: a5
             os: openeuler
-            image: ${{ needs.prepare.outputs.base_image }}-a5-openeuler24.03-lts-sp4-py3.12
+            image: ${{ needs.prepare.outputs.base_image }}-950-openeuler24.03-lts-sp4-py3.12
             soc_version: ascend950dt_9582
 
     container:
