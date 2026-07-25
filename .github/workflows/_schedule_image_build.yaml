@@ -127,15 +127,13 @@ on:
         required: false
         type: string
         default: ''
-      # ===== 新增：接收密码作为普通输入（替代 secrets） =====
+    secrets:
       quay_password:
         description: 'Quay password for pushing images'
         required: false
-        type: string
       quay_temp_password:
         description: 'Quay password for pushing temp tag digests'
         required: false
-        type: string
 
 env:
   QUAY_REPO: ${{ inputs.quay_repo }}
@@ -243,7 +241,7 @@ jobs:
       with:
         registry: quay.io
         username: ${{ inputs.quay_temp_username }}
-        password: ${{ inputs.quay_temp_password }}
+        password: ${{ secrets.quay_temp_password }}
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v4
@@ -493,7 +491,7 @@ jobs:
         with:
           registry: quay.io
           username: ${{ inputs.quay_username }}
-          password: ${{ inputs.quay_password }}
+          password: ${{ secrets.quay_password }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -541,7 +539,7 @@ jobs:
         with:
           registry: quay.io
           username: ${{ inputs.quay_temp_username }}
-          password: ${{ inputs.quay_temp_password }}
+          password: ${{ secrets.quay_temp_password }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4

@@ -178,7 +178,7 @@ jobs:
         TRITON_ASCEND_VERSION=${{ inputs.triton_ascend_version || '26.1.0.B110' }}
         TRITON_ASCEND_PACKAGE_VERSION=${{ inputs.triton_ascend_package_version || '3.2.2' }}
       
-      # ===== 关键修改：将 secrets 作为 with 参数传递 =====
+    secrets:
       quay_password: ${{ inputs.build_type == 'daily' && secrets.QUAY_DAILY_PASSWORD || secrets.QUAY_PASSWORD }}
       quay_temp_password: ${{ inputs.build_type == 'daily' && secrets.QUAY_DAILY_TEMP_PASSWORD || secrets.QUAY_TEMP_PASSWORD }}
 
@@ -240,5 +240,5 @@ jobs:
         TRITON_ASCEND_VERSION=${{ inputs.triton_ascend_version || '26.1.0.B110' }}
         TRITON_ASCEND_PACKAGE_VERSION=${{ inputs.triton_ascend_package_version || '3.2.2' }}
       
-      # ===== 关键修改：将 secrets 作为 with 参数传递 =====
+    secrets:
       quay_temp_password: ${{ secrets.QUAY_TEMP_PASSWORD }}
