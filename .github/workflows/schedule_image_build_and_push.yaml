@@ -220,7 +220,8 @@ jobs:
     with:
       dockerfile: ${{ matrix.build_meta.dockerfile }}
       suffix: ${{ matrix.build_meta.suffix }}
-      quay_temp_username: ${{ vars.QUAY_TEMP_USERNAME }}
+      quay_temp_repo: ${{ inputs.build_type == 'daily' && 'quay.io/atlas_inference/vllm-atlas-temp' || 'quay.io/mindie_ci/vllm-atlas-temp' }}
+      quay_temp_username: ${{ inputs.build_type == 'daily' && vars.QUAY_DAILY_TEMP_USERNAME || vars.QUAY_TEMP_USERNAME }}
       should_push: true
       temp_only: true
       vllm_commit: ${{ inputs.vllm_commit }}
@@ -241,4 +242,4 @@ jobs:
         TRITON_ASCEND_PACKAGE_VERSION=${{ inputs.triton_ascend_package_version || '3.2.2' }}
       
     secrets:
-      quay_temp_password: ${{ secrets.QUAY_TEMP_PASSWORD }}
+      quay_temp_password: ${{ inputs.build_type == 'daily' && secrets.QUAY_DAILY_TEMP_PASSWORD || secrets.QUAY_TEMP_PASSWORD }}
