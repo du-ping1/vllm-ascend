@@ -118,10 +118,9 @@ permissions:
   contents: read
 jobs:
   image_build:
-    name: Image Build and Push
+    name: ${{ matrix.build_meta.name }}
     if: ${{ !((github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'image-build')))
         && !(github.event_name == 'workflow_dispatch' && inputs.vllm_commit != '' && inputs.vllm_ascend_commit != '') }}
-    runs-on: ubuntu-latest
     strategy:
       matrix:
         build_meta:
@@ -149,49 +148,47 @@ jobs:
           - name: A5 openEuler
             dockerfile: Dockerfile.a5.openEuler
             suffix: 'a5-openeuler'
-    steps:
-      - uses: ./.github/workflows/_schedule_image_build.yaml
-        with:
-          dockerfile: ${{ matrix.build_meta.dockerfile }}
-          suffix: ${{ matrix.build_meta.suffix }}
-          
-          # ===== Dynamic repository and authentication based on build_type =====
-          quay_repo: ${{ inputs.build_type == 'daily' && 'quay.io/atlas_inference/vllm-ascend' || 'quay.io/mindie_ci/vllm-ascend' }}
-          quay_temp_repo: ${{ inputs.build_type == 'daily' && 'quay.io/atlas_inference/vllm-atlas-temp' || 'quay.io/mindie_ci/vllm-atlas-temp' }}
-          quay_username: ${{ inputs.build_type == 'daily' && vars.QUAY_DAILY_USERNAME || vars.QUAY_USERNAME }}
-          quay_temp_username: ${{ inputs.build_type == 'daily' && vars.QUAY_DAILY_TEMP_USERNAME || vars.QUAY_TEMP_USERNAME }}
-          # ====================================================================
-          
-          should_push: ${{ github.repository_owner == 'du-ping1' && (github.event_name != 'pull_request') }}
-          workflow_dispatch_tag: ${{ inputs.tag != 'none' && inputs.tag || '' }}
-          branch_ref: ${{ inputs.branch != 'none' && inputs.branch || '' }}
-          schedule_tag_pattern: ${{ inputs.build_type == 'daily' && 'daily' || 'main' }}
-          
-          build_args: |
-            BUILD_TYPE=${{ inputs.build_type || 'release' }}
-            MEMCACHE_VERSION=${{ inputs.memcache_version || '1.2.0' }}
-            MEMCACHE_DATE=${{ inputs.memcache_date || '20260725.3' }}
-            MEMFABRIC_VERSION=${{ inputs.memfabric_version || '1.2.0' }}
-            MEMFABRIC_DATE=${{ inputs.memfabric_date || '20260725.3' }}
-            TORCH_NPU_VERSION=${{ inputs.torch_npu_version || '26.1.0' }}
-            TORCH_NPU_DATE=${{ inputs.torch_npu_date || '20260715.4' }}
-            CANN_QUAY_URL=${{ inputs.cann_quay_url || 'quay.io/canuunac/cann' }}
-            CANN_VERSION=${{ inputs.cann_version || '9.1.0.B110' }}
-            TRITON_ASCEND_VERSION=${{ inputs.triton_ascend_version || '26.1.0.B110' }}
-            TRITON_ASCEND_PACKAGE_VERSION=${{ inputs.triton_ascend_package_version || '3.2.2' }}
-          
-          # ===== 关键修改：将 secrets 作为 with 参数传递 =====
-          quay_password: ${{ inputs.build_type == 'daily' && secrets.QUAY_DAILY_PASSWORD || secrets.QUAY_PASSWORD }}
-          quay_temp_password: ${{ inputs.build_type == 'daily' && secrets.QUAY_DAILY_TEMP_PASSWORD || secrets.QUAY_TEMP_PASSWORD }}
+    uses: ./.github/workflows/_schedule_image_build.yaml
+    with:
+      dockerfile: ${{ matrix.build_meta.dockerfile }}
+      suffix: ${{ matrix.build_meta.suffix }}
+      
+      # ===== Dynamic repository and authentication based on build_type =====
+      quay_repo: ${{ inputs.build_type == 'daily' && 'quay.io/atlas_inference/vllm-ascend' || 'quay.io/mindie_ci/vllm-ascend' }}
+      quay_temp_repo: ${{ inputs.build_type == 'daily' && 'quay.io/atlas_inference/vllm-atlas-temp' || 'quay.io/mindie_ci/vllm-atlas-temp' }}
+      quay_username: ${{ inputs.build_type == 'daily' && vars.QUAY_DAILY_USERNAME || vars.QUAY_USERNAME }}
+      quay_temp_username: ${{ inputs.build_type == 'daily' && vars.QUAY_DAILY_TEMP_USERNAME || vars.QUAY_TEMP_USERNAME }}
+      # ====================================================================
+      
+      should_push: ${{ github.repository_owner == 'du-ping1' && (github.event_name != 'pull_request') }}
+      workflow_dispatch_tag: ${{ inputs.tag != 'none' && inputs.tag || '' }}
+      branch_ref: ${{ inputs.branch != 'none' && inputs.branch || '' }}
+      schedule_tag_pattern: ${{ inputs.build_type == 'daily' && 'daily' || 'main' }}
+      
+      build_args: |
+        BUILD_TYPE=${{ inputs.build_type || 'release' }}
+        MEMCACHE_VERSION=${{ inputs.memcache_version || '1.2.0' }}
+        MEMCACHE_DATE=${{ inputs.memcache_date || '20260725.3' }}
+        MEMFABRIC_VERSION=${{ inputs.memfabric_version || '1.2.0' }}
+        MEMFABRIC_DATE=${{ inputs.memfabric_date || '20260725.3' }}
+        TORCH_NPU_VERSION=${{ inputs.torch_npu_version || '26.1.0' }}
+        TORCH_NPU_DATE=${{ inputs.torch_npu_date || '20260715.4' }}
+        CANN_QUAY_URL=${{ inputs.cann_quay_url || 'quay.io/canuunac/cann' }}
+        CANN_VERSION=${{ inputs.cann_version || '9.1.0.B110' }}
+        TRITON_ASCEND_VERSION=${{ inputs.triton_ascend_version || '26.1.0.B110' }}
+        TRITON_ASCEND_PACKAGE_VERSION=${{ inputs.triton_ascend_package_version || '3.2.2' }}
+      
+      # ===== 关键修改：将 secrets 作为 with 参数传递 =====
+      quay_password: ${{ inputs.build_type == 'daily' && secrets.QUAY_DAILY_PASSWORD || secrets.QUAY_PASSWORD }}
+      quay_temp_password: ${{ inputs.build_type == 'daily' && secrets.QUAY_DAILY_TEMP_PASSWORD || secrets.QUAY_TEMP_PASSWORD }}
 
   image_build_by_commit:
-    name: Image Build (commit mode) and Push to QUAY_TEMP
+    name: ${{ matrix.build_meta.name }} (commit mode)
     if: ${{ github.event_name == 'workflow_dispatch'
         && inputs.vllm_commit != ''
         && inputs.vllm_ascend_commit != ''
         && inputs.tag == 'none'
         && inputs.branch == 'none' }}
-    runs-on: ubuntu-latest
     strategy:
       matrix:
         build_meta:
@@ -219,30 +216,29 @@ jobs:
           - name: A5 openEuler
             dockerfile: Dockerfile.a5.openEuler
             suffix: 'a5-openeuler'
-    steps:
-      - uses: ./.github/workflows/_schedule_image_build.yaml
-        with:
-          dockerfile: ${{ matrix.build_meta.dockerfile }}
-          suffix: ${{ matrix.build_meta.suffix }}
-          quay_temp_username: ${{ vars.QUAY_TEMP_USERNAME }}
-          should_push: true
-          temp_only: true
-          vllm_commit: ${{ inputs.vllm_commit }}
-          vllm_ascend_commit: ${{ inputs.vllm_ascend_commit }}
-          workflow_dispatch_tag: ''
-          branch_ref: ''
-          build_args: |
-            BUILD_TYPE=${{ inputs.build_type || 'release' }}
-            MEMCACHE_VERSION=${{ inputs.memcache_version || '1.2.0' }}
-            MEMCACHE_DATE=${{ inputs.memcache_date || '20260716.5' }}
-            MEMFABRIC_VERSION=${{ inputs.memfabric_version || '1.2.0' }}
-            MEMFABRIC_DATE=${{ inputs.memfabric_date || '20260716.8' }}
-            TORCH_NPU_VERSION=${{ inputs.torch_npu_version || '26.1.0' }}
-            TORCH_NPU_DATE=${{ inputs.torch_npu_date || '20260715.4' }}
-            CANN_QUAY_URL=${{ inputs.cann_quay_url || 'quay.io/canuunac/cann' }}
-            CANN_VERSION=${{ inputs.cann_version || '9.1.0.B090' }}
-            TRITON_ASCEND_VERSION=${{ inputs.triton_ascend_version || '26.1.0.B110' }}
-            TRITON_ASCEND_PACKAGE_VERSION=${{ inputs.triton_ascend_package_version || '3.2.2' }}
-          
-          # ===== 关键修改：将 secrets 作为 with 参数传递 =====
-          quay_temp_password: ${{ secrets.QUAY_TEMP_PASSWORD }}
+    uses: ./.github/workflows/_schedule_image_build.yaml
+    with:
+      dockerfile: ${{ matrix.build_meta.dockerfile }}
+      suffix: ${{ matrix.build_meta.suffix }}
+      quay_temp_username: ${{ vars.QUAY_TEMP_USERNAME }}
+      should_push: true
+      temp_only: true
+      vllm_commit: ${{ inputs.vllm_commit }}
+      vllm_ascend_commit: ${{ inputs.vllm_ascend_commit }}
+      workflow_dispatch_tag: ''
+      branch_ref: ''
+      build_args: |
+        BUILD_TYPE=${{ inputs.build_type || 'release' }}
+        MEMCACHE_VERSION=${{ inputs.memcache_version || '1.2.0' }}
+        MEMCACHE_DATE=${{ inputs.memcache_date || '20260716.5' }}
+        MEMFABRIC_VERSION=${{ inputs.memfabric_version || '1.2.0' }}
+        MEMFABRIC_DATE=${{ inputs.memfabric_date || '20260716.8' }}
+        TORCH_NPU_VERSION=${{ inputs.torch_npu_version || '26.1.0' }}
+        TORCH_NPU_DATE=${{ inputs.torch_npu_date || '20260715.4' }}
+        CANN_QUAY_URL=${{ inputs.cann_quay_url || 'quay.io/canuunac/cann' }}
+        CANN_VERSION=${{ inputs.cann_version || '9.1.0.B090' }}
+        TRITON_ASCEND_VERSION=${{ inputs.triton_ascend_version || '26.1.0.B110' }}
+        TRITON_ASCEND_PACKAGE_VERSION=${{ inputs.triton_ascend_package_version || '3.2.2' }}
+      
+      # ===== 关键修改：将 secrets 作为 with 参数传递 =====
+      quay_temp_password: ${{ secrets.QUAY_TEMP_PASSWORD }}
