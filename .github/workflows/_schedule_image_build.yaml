@@ -2,6 +2,19 @@ name: Image_oncall
 on:
   workflow_call:
     inputs:
+      # ========== New: Repository parameters for dynamic switching ==========
+      quay_repo:
+        description: 'Quay repository for final images'
+        required: false
+        type: string
+        default: 'quay.io/mindie_ci/vllm-ascend'
+      quay_temp_repo:
+        description: 'Quay repository for temp images'
+        required: false
+        type: string
+        default: 'quay.io/mindie_ci/vllm-atlas-temp'
+      # ====================================================================
+      
       suffix:
         description: 'The tag subfix to use'
         required: true
@@ -125,10 +138,12 @@ on:
             description: 'Quay password for pushing temp tag digests'
             required: false
 
+# ========== Modified: Replace hardcoded repo addresses with input parameters ==========
 env:
-  QUAY_REPO: quay.io/mindie_ci/vllm-ascend
-  QUAY_TEMP_REPO: quay.io/mindie_ci/vllm-atlas-temp
+  QUAY_REPO: ${{ inputs.quay_repo }}
+  QUAY_TEMP_REPO: ${{ inputs.quay_temp_repo }}
   CACHE_REPO: ghcr.io/du-ping1/vllm-ascend
+# ======================================================================================
 
 jobs:
   build-push-digest:
