@@ -108,7 +108,7 @@ jobs:
           if [ "${{ inputs.build_type }}" = "daily" ]; then
             SWR_REGISTRY="swr.cn-north-4.myhuaweicloud.com/inference/vllm-ascend"
             TAG_PREFIX="daily"
-            BASE_IMAGE="quay.io/mindie_ci/vllm-ascend:nightly-main"
+            BASE_IMAGE="quay.io/mindie_ci/vllm-ascend"
           else
             SWR_REGISTRY="swr.cn-southwest-2.myhuaweicloud.com/base_image/ascend-ci/vllm-ascend"
             TAG_PREFIX="nightly-ci"
