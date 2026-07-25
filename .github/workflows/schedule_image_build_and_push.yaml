@@ -127,30 +127,30 @@ jobs:
     strategy:
       matrix:
         build_meta:
-          - name: A2 Ubuntu
-            dockerfile: Dockerfile
-            suffix: ''
-          - name: A2 openeuler
-            dockerfile: Dockerfile.openEuler
-            suffix: 'openeuler'
-          - name: A3 Ubuntu
-            dockerfile: Dockerfile.a3
-            suffix: 'a3'
-          - name: A3 openEuler
-            dockerfile: Dockerfile.a3.openEuler
-            suffix: 'a3-openeuler'
-          - name: 310P Ubuntu
-            dockerfile: Dockerfile.310p
-            suffix: '310p'
+          # - name: A2 Ubuntu
+          #   dockerfile: Dockerfile
+          #   suffix: ''
+          # - name: A2 openeuler
+          #   dockerfile: Dockerfile.openEuler
+          #   suffix: 'openeuler'
+          # - name: A3 Ubuntu
+          #   dockerfile: Dockerfile.a3
+          #   suffix: 'a3'
+          # - name: A3 openEuler
+          #   dockerfile: Dockerfile.a3.openEuler
+          #   suffix: 'a3-openeuler'
+          # - name: 310P Ubuntu
+          #   dockerfile: Dockerfile.310p
+          #   suffix: '310p'
           - name: 310P openEuler
             dockerfile: Dockerfile.310p.openEuler
             suffix: '310p-openeuler'
-          - name: A5 Ubuntu
-            dockerfile: Dockerfile.a5
-            suffix: 'a5'
-          - name: A5 openEuler
-            dockerfile: Dockerfile.a5.openEuler
-            suffix: 'a5-openeuler'
+          # - name: A5 Ubuntu
+          #   dockerfile: Dockerfile.a5
+          #   suffix: 'a5'
+          # - name: A5 openEuler
+          #   dockerfile: Dockerfile.a5.openEuler
+          #   suffix: 'a5-openeuler'
     uses: ./.github/workflows/_schedule_image_build.yaml
     with:
       dockerfile: ${{ matrix.build_meta.dockerfile }}
@@ -167,6 +167,8 @@ jobs:
       workflow_dispatch_tag: ${{ inputs.tag != 'none' && inputs.tag || '' }}
       branch_ref: ${{ inputs.branch != 'none' && inputs.branch || '' }}
       schedule_tag_pattern: 'main'
+      build_type: ${{ inputs.build_type || 'release' }}
+      cann_version: ${{ inputs.cann_version || '9.1.0.B090' }}
       
       build_args: |
         BUILD_TYPE=${{ inputs.build_type || 'release' }}
@@ -195,30 +197,30 @@ jobs:
     strategy:
       matrix:
         build_meta:
-          - name: A2 Ubuntu
-            dockerfile: Dockerfile
-            suffix: ''
-          - name: A2 openeuler
-            dockerfile: Dockerfile.openEuler
-            suffix: 'openeuler'
-          - name: A3 Ubuntu
-            dockerfile: Dockerfile.a3
-            suffix: 'a3'
-          - name: A3 openEuler
-            dockerfile: Dockerfile.a3.openEuler
-            suffix: 'a3-openeuler'
-          - name: 310P Ubuntu
-            dockerfile: Dockerfile.310p
-            suffix: '310p'
+          # - name: A2 Ubuntu
+          #   dockerfile: Dockerfile
+          #   suffix: ''
+          # - name: A2 openeuler
+          #   dockerfile: Dockerfile.openEuler
+          #   suffix: 'openeuler'
+          # - name: A3 Ubuntu
+          #   dockerfile: Dockerfile.a3
+          #   suffix: 'a3'
+          # - name: A3 openEuler
+          #   dockerfile: Dockerfile.a3.openEuler
+          #   suffix: 'a3-openeuler'
+          # - name: 310P Ubuntu
+          #   dockerfile: Dockerfile.310p
+          #   suffix: '310p'
           - name: 310P openEuler
             dockerfile: Dockerfile.310p.openEuler
             suffix: '310p-openeuler'
-          - name: A5 Ubuntu
-            dockerfile: Dockerfile.a5
-            suffix: 'a5'
-          - name: A5 openEuler
-            dockerfile: Dockerfile.a5.openEuler
-            suffix: 'a5-openeuler'
+          # - name: A5 Ubuntu
+          #   dockerfile: Dockerfile.a5
+          #   suffix: 'a5'
+          # - name: A5 openEuler
+          #   dockerfile: Dockerfile.a5.openEuler
+          #   suffix: 'a5-openeuler'
     uses: ./.github/workflows/_schedule_image_build.yaml
     with:
       dockerfile: ${{ matrix.build_meta.dockerfile }}
@@ -231,6 +233,8 @@ jobs:
       vllm_ascend_commit: ${{ inputs.vllm_ascend_commit }}
       workflow_dispatch_tag: ''
       branch_ref: ''
+      build_type: ${{ inputs.build_type || 'release' }}
+      cann_version: ${{ inputs.cann_version || '9.1.0.B090' }}
       build_args: |
         BUILD_TYPE=${{ inputs.build_type || 'release' }}
         MEMCACHE_VERSION=${{ inputs.memcache_version || '1.2.0' }}
