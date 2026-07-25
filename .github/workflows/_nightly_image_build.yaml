@@ -81,7 +81,7 @@ jobs:
 
       - name: Login to Huawei Cloud SWR (Release)
         id: login-swr
-        if: ${{ inputs.build_type != 'daily' && env.HW_USERNAME != '' && env.HW_TOKEN != '' }}
+        if: ${{ inputs.build_type != 'daily' }}
         env:
           HW_USERNAME: ${{ secrets.HW_USERNAME }}
           HW_TOKEN: ${{ secrets.HW_TOKEN }}
@@ -90,7 +90,7 @@ jobs:
 
       - name: Login to Huawei Cloud SWR (Daily)
         id: login-swr-daily
-        if: ${{ inputs.build_type == 'daily' && env.HW_USERNAME_DAILY != '' && env.HW_TOKEN_DAILY != '' }}
+        if: ${{ inputs.build_type == 'daily' }}
         env:
           HW_USERNAME_DAILY: ${{ secrets.HW_USERNAME_DAILY }}
           HW_TOKEN_DAILY: ${{ secrets.HW_TOKEN_DAILY }}
@@ -182,7 +182,7 @@ jobs:
     if: ${{ needs.build.outputs.swr_logged_in == 'true' }}
     steps:
       - name: Login to Huawei Cloud SWR (Release)
-        if: ${{ needs.build.outputs.build_type != 'daily' && env.HW_USERNAME != '' && env.HW_TOKEN != '' }}
+        if: ${{ needs.build.outputs.build_type != 'daily' }}
         env:
           HW_USERNAME: ${{ secrets.HW_USERNAME }}
           HW_TOKEN: ${{ secrets.HW_TOKEN }}
@@ -190,7 +190,7 @@ jobs:
           echo "$HW_TOKEN" | docker login -u "$HW_USERNAME" --password-stdin swr.cn-southwest-2.myhuaweicloud.com
 
       - name: Login to Huawei Cloud SWR (Daily)
-        if: ${{ needs.build.outputs.build_type == 'daily' && env.HW_USERNAME_DAILY != '' && env.HW_TOKEN_DAILY != '' }}
+        if: ${{ needs.build.outputs.build_type == 'daily' }}
         env:
           HW_USERNAME_DAILY: ${{ secrets.HW_USERNAME_DAILY }}
           HW_TOKEN_DAILY: ${{ secrets.HW_TOKEN_DAILY }}
