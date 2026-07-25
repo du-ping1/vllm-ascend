@@ -61,7 +61,10 @@ on:
         description: 'Build type (release/daily)'
         required: false
         default: 'release'
-        type: string
+        type: choice
+        options:
+          - release
+          - daily
       memcache_version:
         description: 'Memcache version'
         required: false

@@ -433,21 +433,16 @@ jobs:
           # Get the suffix
           SUFFIX="${{ inputs.suffix }}"
           
-          # Construct the daily tag: daily-cann{VERSION}-{DATE}-{PATTERN}-{SUFFIX}
-          # Example: daily-cann9.1.0.b090-20260725-main-a5
+          # Construct the daily tag: nightly-{PATTERN}-{SUFFIX}-cann{VERSION}-{DATE}
+          # Example: nightly-main-310p-openeuler-cann9.1.0.b110-20260725
           if [ -n "$SUFFIX" ]; then
-            DAILY_TAG="daily-cann${CANN_VERSION}-${DATE}-${PATTERN}-${SUFFIX}"
+            DAILY_TAG="nightly-${PATTERN}-${SUFFIX}-cann${CANN_VERSION}-${DATE}"
           else
-            DAILY_TAG="daily-cann${CANN_VERSION}-${DATE}-${PATTERN}"
+            DAILY_TAG="nightly-${PATTERN}-cann${CANN_VERSION}-${DATE}"
           fi
           
           echo "Generated daily tag: $DAILY_TAG"
           echo "daily_tag=$DAILY_TAG" >> $GITHUB_OUTPUT
-          
-          # Also create a tag with just the date for the latest daily
-          # Example: daily-cann9.1.0.b090-latest
-          LATEST_TAG="daily-cann${CANN_VERSION}-latest"
-          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
       # =========================================================
 
       - name: Docker meta
@@ -481,7 +476,6 @@ jobs:
             
             # ===== New: Daily scenario specific tags =====
             type=raw,value=${{ steps.daily_tags.outputs.daily_tag }},enable=${{ inputs.build_type == 'daily' }}
-            type=raw,value=${{ steps.daily_tags.outputs.latest_tag }},enable=${{ inputs.build_type == 'daily' }}
             # =============================================
           flavor:
             latest=false
