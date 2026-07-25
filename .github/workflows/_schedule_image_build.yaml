@@ -556,3 +556,19 @@ jobs:
           docker buildx imagetools create \
             -t "$TAG" \
             $DIGESTS
+
+          # ===== Daily scenario: also push daily tag =====
+          if [ "${{ inputs.build_type }}" = "daily" ]; then
+            DATE=$(date +'%Y%m%d')
+            CANN_VERSION=$(echo "${{ inputs.cann_version }}" | tr '[:upper:]' '[:lower:]')
+            PATTERN="${{ inputs.schedule_tag_pattern }}"
+            if [ -n "${{ inputs.suffix }}" ]; then
+              DAILY_TAG="${IMAGE}:nightly-${PATTERN}-${{ inputs.suffix }}-cann${CANN_VERSION}-${DATE}"
+            else
+              DAILY_TAG="${IMAGE}:nightly-${PATTERN}-cann${CANN_VERSION}-${DATE}"
+            fi
+            echo "Creating daily tag: $DAILY_TAG"
+            docker buildx imagetools create \
+              -t "$DAILY_TAG" \
+              $DIGESTS
+          fi
