@@ -149,7 +149,7 @@ jobs:
           echo "full_tag=${FULL_TAG}" >> $GITHUB_OUTPUT
           echo "build_type=${{ inputs.build_type }}" >> $GITHUB_OUTPUT
 
-          if [ "${{ github.repository_owner }}" = "du-ping1" ] && [ "${{ steps.login-swr.conclusion || steps.login-swr-daily.conclusion }}" = "success" ]; then
+          if [ "${{ github.repository_owner }}" = "du-ping1" ] && [ "${{ steps.login-swr.outcome == 'success' || steps.login-swr-daily.outcome == 'success' }}" = "true" ]; then
             echo "swr_logged_in=true" >> $GITHUB_OUTPUT
           else
             echo "swr_logged_in=false" >> $GITHUB_OUTPUT
