@@ -474,7 +474,7 @@ jobs:
           #    - inputs.tag=v0.16.0rc1 --> vllm-ascend:v0.16.0rc1[-suffix]
           tags: |
             type=pep440,pattern={{raw}},suffix=${{ env.SUFFIX }}
-            type=schedule,pattern=${{ inputs.schedule_tag_pattern }},prefix=nightly-,suffix=${{ env.SUFFIX }},enable=${{ inputs.build_type != 'daily' }}
+            type=schedule,pattern=${{ inputs.schedule_tag_pattern }},prefix=nightly-,suffix=${{ env.SUFFIX }}
             type=raw,value=${{ inputs.workflow_dispatch_tag }},enable=${{ github.event_name == 'workflow_dispatch' && inputs.workflow_dispatch_tag != '' }},suffix=${{ env.SUFFIX }}
             type=raw,value=${{ inputs.branch_ref }},enable=${{ github.event_name == 'workflow_dispatch' && inputs.workflow_dispatch_tag == '' }},prefix=nightly-,suffix=${{ env.SUFFIX }}
             
@@ -511,6 +511,19 @@ jobs:
               -t "$tag" \
               $DIGESTS
           done
+
+      - name: Remove unwanted schedule tag (daily only)
+        if: ${{ inputs.build_type == 'daily' }}
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq skopeo
+          SUFFIX=""
+          if [ -n "${{ inputs.suffix }}" ]; then
+            SUFFIX="-${{ inputs.suffix }}"
+          fi
+          TAG="nightly-${{ inputs.schedule_tag_pattern }}${SUFFIX}"
+          echo "Removing tag ${{ env.QUAY_REPO }}:${TAG}"
+          skopeo delete --creds "${{ inputs.quay_username }}:${{ secrets.quay_password }}" \
+            "docker://${{ env.QUAY_REPO }}:${TAG}" || true
 
       - name: Clean up temp tags
         if: ${{ inputs.build_type == 'daily' }}
