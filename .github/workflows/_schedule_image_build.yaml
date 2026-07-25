@@ -498,6 +498,9 @@ jobs:
         env:
           IMAGE: ${{ env.QUAY_TEMP_REPO }}
           TAGS: ${{ steps.meta.outputs.tags }}
+          BUILD_TYPE: ${{ inputs.build_type }}
+          SCHEDULE_TAG_PATTERN: ${{ inputs.schedule_tag_pattern }}
+          SUFFIX: ${{ env.SUFFIX }}
         run: |
           DIGESTS=$(printf "$IMAGE@sha256:%s " $(ls ${{ runner.temp }}/digests))
 
@@ -505,25 +508,20 @@ jobs:
           echo "Current tags:"
           echo "$TAGS"
 
+          # For daily builds, skip the plain schedule tag (e.g. nightly-main-310p-openeuler)
+          # because it's redundant with the daily tag that includes CANN version + date
+          UNWANTED_TAG="nightly-${SCHEDULE_TAG_PATTERN}${SUFFIX}"
+
           for tag in $TAGS; do
+            if [ "$BUILD_TYPE" = "daily" ] && [ "$tag" = "${{ env.QUAY_REPO }}:${UNWANTED_TAG}" ]; then
+              echo "Skipping unwanted schedule tag: $tag"
+              continue
+            fi
             echo "Creating tag $tag"
             docker buildx imagetools create \
               -t "$tag" \
               $DIGESTS
           done
-
-      - name: Remove unwanted schedule tag (daily only)
-        if: ${{ inputs.build_type == 'daily' }}
-        run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq skopeo
-          SUFFIX=""
-          if [ -n "${{ inputs.suffix }}" ]; then
-            SUFFIX="-${{ inputs.suffix }}"
-          fi
-          TAG="nightly-${{ inputs.schedule_tag_pattern }}${SUFFIX}"
-          echo "Removing tag ${{ env.QUAY_REPO }}:${TAG}"
-          skopeo delete --creds "${{ inputs.quay_username }}:${{ secrets.quay_password }}" \
-            "docker://${{ env.QUAY_REPO }}:${TAG}" || true
 
       - name: Clean up temp tags
         if: ${{ inputs.build_type == 'daily' }}
