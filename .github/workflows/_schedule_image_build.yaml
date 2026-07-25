@@ -426,6 +426,37 @@ jobs:
             echo "SUFFIX=" >> $GITHUB_ENV
           fi
 
+      # ===== New: Generate custom tags for daily scenario =====
+      - name: Generate daily tags
+        id: daily_tags
+        if: ${{ inputs.build_type == 'daily' }}
+        run: |
+          # Get current date in YYYYMMDD format
+          DATE=$(date +'%Y%m%d')
+          # Get CANN version and convert to lowercase (e.g., 9.1.0.B090 -> 9.1.0.b090)
+          CANN_VERSION=$(echo "${{ inputs.cann_version }}" | tr '[:upper:]' '[:lower:]')
+          # Get the base tag pattern (e.g., main)
+          PATTERN="${{ inputs.schedule_tag_pattern }}"
+          # Get the suffix
+          SUFFIX="${{ inputs.suffix }}"
+          
+          # Construct the daily tag: daily-cann{VERSION}-{DATE}-{PATTERN}-{SUFFIX}
+          # Example: daily-cann9.1.0.b090-20260725-main-a5
+          if [ -n "$SUFFIX" ]; then
+            DAILY_TAG="daily-cann${CANN_VERSION}-${DATE}-${PATTERN}-${SUFFIX}"
+          else
+            DAILY_TAG="daily-cann${CANN_VERSION}-${DATE}-${PATTERN}"
+          fi
+          
+          echo "Generated daily tag: $DAILY_TAG"
+          echo "daily_tag=$DAILY_TAG" >> $GITHUB_OUTPUT
+          
+          # Also create a tag with just the date for the latest daily
+          # Example: daily-cann9.1.0.b090-latest
+          LATEST_TAG="daily-cann${CANN_VERSION}-latest"
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+      # =========================================================
+
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v6
@@ -454,6 +485,11 @@ jobs:
             type=schedule,pattern=${{ inputs.schedule_tag_pattern }},prefix=nightly-,suffix=${{ env.SUFFIX }}
             type=raw,value=${{ inputs.workflow_dispatch_tag }},enable=${{ github.event_name == 'workflow_dispatch' && inputs.workflow_dispatch_tag != '' }},suffix=${{ env.SUFFIX }}
             type=raw,value=${{ inputs.branch_ref }},enable=${{ github.event_name == 'workflow_dispatch' && inputs.workflow_dispatch_tag == '' }},prefix=nightly-,suffix=${{ env.SUFFIX }}
+            
+            # ===== New: Daily scenario specific tags =====
+            type=raw,value=${{ steps.daily_tags.outputs.daily_tag }},enable=${{ inputs.build_type == 'daily' }}
+            type=raw,value=${{ steps.daily_tags.outputs.latest_tag }},enable=${{ inputs.build_type == 'daily' }}
+            # =============================================
           flavor:
             latest=false
 
