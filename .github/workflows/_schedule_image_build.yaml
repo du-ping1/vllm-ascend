@@ -2,7 +2,6 @@ name: Image_oncall
 on:
   workflow_call:
     inputs:
-      # ========== New: Repository parameters for dynamic switching ==========
       quay_repo:
         description: 'Quay repository for final images'
         required: false
@@ -12,9 +11,7 @@ on:
         description: 'Quay repository for temp images'
         required: false
         type: string
-        default: 'quay.io/mindie_ci/vllm-atlas-temp'
-      # ====================================================================
-      
+        default: 'quay.io/mindie_ci/vllm-atlas-temp'    
       suffix:
         description: 'The tag subfix to use'
         required: true
@@ -84,7 +81,7 @@ on:
         description: 'Memcache date'
         required: false
         type: string
-        default: '20260716.5'
+        default: '20260725.3'
       memfabric_version:
         description: 'Memfabric version'
         required: false
@@ -94,7 +91,7 @@ on:
         description: 'Memfabric date'
         required: false
         type: string
-        default: '20260716.8'
+        default: '20260725.3'
       torch_npu_version:
         description: 'Torch NPU version'
         required: false
@@ -114,7 +111,7 @@ on:
         description: 'CANN version'
         required: false
         type: string
-        default: '9.1.0.B090'
+        default: '9.1.0.B110'
       triton_ascend_version:
         description: 'Triton Ascend version'
         required: false
@@ -138,12 +135,10 @@ on:
             description: 'Quay password for pushing temp tag digests'
             required: false
 
-# ========== Modified: Replace hardcoded repo addresses with input parameters ==========
 env:
   QUAY_REPO: ${{ inputs.quay_repo }}
   QUAY_TEMP_REPO: ${{ inputs.quay_temp_repo }}
   CACHE_REPO: ghcr.io/du-ping1/vllm-ascend
-# ======================================================================================
 
 jobs:
   build-push-digest:
@@ -163,9 +158,7 @@ jobs:
           - arch: linux/arm64
             runner: ubuntu-22.04-arm
             tag: arm64
-
     steps:
-
     - name: Validate inputs (workflow_dispatch only)
       if: ${{ github.event_name == 'workflow_dispatch' }}
       run: |
