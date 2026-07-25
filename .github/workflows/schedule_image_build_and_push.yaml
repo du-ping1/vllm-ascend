@@ -1,122 +1,3 @@
-# This is a docker build check and publish job:
-# 1. PR Triggered docker image build check
-#   - 'image-build' label should be added
-#   - is for image build check
-#   - Enable on main/releases branch
-#   - push: ${{ github.event_name != 'pull_request' }} ==> false
-# 2. branches push trigger image publish
-#   - is for branch/dev/nightly image
-#   - commits are merge into main/*-dev  ==> vllm-ascend:main / vllm-ascend:*-dev
-# 3. tags push trigger image publish
-#   - is for final release image
-#   - Publish when tag with v* (pep440 version)  ===>  vllm-ascend:v1.2.3 / vllm-ascend:v1.2.3rc1
-name: Image Build and Push
-on:
-  push:
-    tags:
-      - 'v*'
-  pull_request: 
-    branches:
-      - 'main'
-      - 'releases/*'
-    types: [ labeled ]
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Docker tag for build results (mutually exclusive with branch)'
-        default: "none"
-        required: false
-        type: choice
-        options:
-          - main
-          - v0.23.0rc1
-          - v0.22.1rc1
-          - v0.21.0rc1
-          - v0.20.2rc1
-          - none
-      branch:
-        description: 'Docker branch for build results (mutually exclusive with tag)'
-        default: "none"
-        required: false
-        type: choice
-        options:
-          - main
-          - releases/v0.23.0
-          - releases/v0.22.1rc
-          - releases/v0.21.0rc
-          - releases/v0.20.2rc
-          - releases/v0.18.0
-          - none
-      vllm_commit:
-        description: 'vLLM commit hash (must be paired with vllm_ascend_commit; mutually exclusive with tag/branch). Image will be pushed only to QUAY_TEMP_USERNAME.'
-        required: false
-        default: ''
-        type: string
-      vllm_ascend_commit:
-        description: 'vllm-ascend commit hash (must be paired with vllm_commit; mutually exclusive with tag/branch). Image will be pushed only to QUAY_TEMP_USERNAME.'
-        required: false
-        default: ''
-        type: string
-      build_type:
-        description: 'Build type (release/daily)'
-        required: false
-        default: 'release'
-        type: string
-      memcache_version:
-        description: 'Memcache version'
-        required: false
-        default: '1.2.0'
-        type: string
-      memcache_date:
-        description: 'Memcache date'
-        required: false
-        default: '20260725.3'
-        type: string
-      memfabric_version:
-        description: 'Memfabric version'
-        required: false
-        default: '1.2.0'
-        type: string
-      memfabric_date:
-        description: 'Memfabric date'
-        required: false
-        default: '20260725.3'
-        type: string
-      torch_npu_version:
-        description: 'Torch NPU version'
-        required: false
-        default: '26.1.0'
-        type: string
-      torch_npu_date:
-        description: 'Torch NPU date'
-        required: false
-        default: '20260715.4'
-        type: string
-      cann_quay_url:
-        description: 'CANN Quay URL'
-        required: false
-        default: 'quay.io/canuunac/cann'
-        type: string
-      cann_version:
-        description: 'CANN version'
-        required: false
-        default: '9.1.0.B110'
-        type: string
-      triton_ascend_version:
-        description: 'Triton Ascend version'
-        required: false
-        default: '26.1.0.B110'
-        type: string
-      triton_ascend_package_version:
-        description: 'Triton Ascend package version'
-        required: false
-        default: '3.2.2'
-        type: string
-
-permissions:
-  packages: write
-  contents: read
-
 jobs:
   image_build:
     name: Image Build and Push
@@ -180,9 +61,10 @@ jobs:
             CANN_VERSION=${{ inputs.cann_version || '9.1.0.B110' }}
             TRITON_ASCEND_VERSION=${{ inputs.triton_ascend_version || '26.1.0.B110' }}
             TRITON_ASCEND_PACKAGE_VERSION=${{ inputs.triton_ascend_package_version || '3.2.2' }}
-        secrets:
-          QUAY_PASSWORD: ${{ inputs.build_type == 'daily' && secrets.QUAY_DAILY_PASSWORD || secrets.QUAY_PASSWORD }}
-          QUAY_TEMP_PASSWORD: ${{ inputs.build_type == 'daily' && secrets.QUAY_DAILY_TEMP_PASSWORD || secrets.QUAY_TEMP_PASSWORD }}
+          
+          # ===== 关键修改：将 secrets 作为 with 参数传递 =====
+          quay_password: ${{ inputs.build_type == 'daily' && secrets.QUAY_DAILY_PASSWORD || secrets.QUAY_PASSWORD }}
+          quay_temp_password: ${{ inputs.build_type == 'daily' && secrets.QUAY_DAILY_TEMP_PASSWORD || secrets.QUAY_TEMP_PASSWORD }}
 
   image_build_by_commit:
     name: Image Build (commit mode) and Push to QUAY_TEMP
@@ -243,6 +125,6 @@ jobs:
             CANN_VERSION=${{ inputs.cann_version || '9.1.0.B090' }}
             TRITON_ASCEND_VERSION=${{ inputs.triton_ascend_version || '26.1.0.B110' }}
             TRITON_ASCEND_PACKAGE_VERSION=${{ inputs.triton_ascend_package_version || '3.2.2' }}
-        secrets:
-          QUAY_PASSWORD: ${{ inputs.build_type == 'daily' && secrets.QUAY_DAILY_PASSWORD || secrets.QUAY_PASSWORD }}
-          QUAY_TEMP_PASSWORD: ${{ inputs.build_type == 'daily' && secrets.QUAY_DAILY_TEMP_PASSWORD || secrets.QUAY_TEMP_PASSWORD }}
+          
+          # ===== 关键修改：将 secrets 作为 with 参数传递 =====
+          quay_temp_password: ${{ secrets.QUAY_TEMP_PASSWORD }}
