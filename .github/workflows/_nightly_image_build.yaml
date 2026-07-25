@@ -68,6 +68,7 @@ jobs:
             platform: linux/arm64
     outputs:
       swr_registry: ${{ steps.build.outputs.swr_registry }}
+      swr_temp_registry: ${{ steps.build.outputs.swr_temp_registry }}
       tag_prefix: ${{ steps.build.outputs.tag_prefix }}
       full_tag: ${{ steps.build.outputs.full_tag }}
       build_type: ${{ steps.build.outputs.build_type }}
@@ -114,16 +115,18 @@ jobs:
 
           if [ "${{ inputs.build_type }}" = "daily" ]; then
             SWR_REGISTRY="swr.cn-north-4.myhuaweicloud.com/inference/vllm-ascend"
+            SWR_TEMP_REGISTRY="swr.cn-north-4.myhuaweicloud.com/inference/vllm-ascend-temp"
             TAG_PREFIX="daily"
             BASE_IMAGE="quay.io/mindie_ci/vllm-ascend"
           else
             SWR_REGISTRY="swr.cn-southwest-2.myhuaweicloud.com/base_image/ascend-ci/vllm-ascend"
+            SWR_TEMP_REGISTRY="swr.cn-southwest-2.myhuaweicloud.com/base_image/ascend-ci/vllm-ascend-temp"
             TAG_PREFIX="nightly-ci"
             BASE_IMAGE=""
           fi
 
           FULL_TAG="${TAG_PREFIX}-${BRANCH_TAG}-${{ inputs.target }}"
-          IMAGE="${SWR_REGISTRY}:${FULL_TAG}-${{ matrix.arch.name }}"
+          IMAGE="${SWR_TEMP_REGISTRY}:${FULL_TAG}-${{ matrix.arch.name }}"
 
           BUILD_ARGS=(
             --network host
@@ -145,6 +148,7 @@ jobs:
 
           # Export outputs for merge job
           echo "swr_registry=${SWR_REGISTRY}" >> $GITHUB_OUTPUT
+          echo "swr_temp_registry=${SWR_TEMP_REGISTRY}" >> $GITHUB_OUTPUT
           echo "tag_prefix=${TAG_PREFIX}" >> $GITHUB_OUTPUT
           echo "full_tag=${FULL_TAG}" >> $GITHUB_OUTPUT
           echo "build_type=${{ inputs.build_type }}" >> $GITHUB_OUTPUT
@@ -155,21 +159,21 @@ jobs:
             echo "swr_logged_in=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Push image to SWR
+      - name: Push image to SWR temp
         if: ${{ github.repository_owner == 'du-ping1' && (steps.login-swr.conclusion == 'success' || steps.login-swr-daily.conclusion == 'success') }}
         run: |
           BRANCH_TAG="${{ inputs.vllm_ascend_branch }}"
           BRANCH_TAG="${BRANCH_TAG//\//-}"
 
           if [ "${{ inputs.build_type }}" = "daily" ]; then
-            SWR_REGISTRY="swr.cn-north-4.myhuaweicloud.com/inference/vllm-ascend"
+            SWR_TEMP_REGISTRY="swr.cn-north-4.myhuaweicloud.com/inference/vllm-ascend-temp"
             TAG_PREFIX="daily"
           else
-            SWR_REGISTRY="swr.cn-southwest-2.myhuaweicloud.com/base_image/ascend-ci/vllm-ascend"
+            SWR_TEMP_REGISTRY="swr.cn-southwest-2.myhuaweicloud.com/base_image/ascend-ci/vllm-ascend-temp"
             TAG_PREFIX="nightly-ci"
           fi
 
-          docker push ${SWR_REGISTRY}:${TAG_PREFIX}-${BRANCH_TAG}-${{ inputs.target }}-${{ matrix.arch.name }}
+          docker push ${SWR_TEMP_REGISTRY}:${TAG_PREFIX}-${BRANCH_TAG}-${{ inputs.target }}-${{ matrix.arch.name }}
 
   merge-image:
     name: Merge multi-arch nightly-${{ inputs.target }}
@@ -195,37 +199,16 @@ jobs:
 
       - name: Create multi-arch manifest
         run: |
-          REGISTRY="${{ needs.build.outputs.swr_registry }}"
+          MAIN_REGISTRY="${{ needs.build.outputs.swr_registry }}"
+          TEMP_REGISTRY="${{ needs.build.outputs.swr_temp_registry }}"
           FULL_TAG="${{ needs.build.outputs.full_tag }}"
-          MANIFEST_TAG="${REGISTRY}:${FULL_TAG}"
 
-          AMD64_TAG="${REGISTRY}:${FULL_TAG}-amd64"
-          ARM64_TAG="${REGISTRY}:${FULL_TAG}-arm64"
+          MANIFEST_TAG="${MAIN_REGISTRY}:${FULL_TAG}"
+          AMD64_TAG="${TEMP_REGISTRY}:${FULL_TAG}-amd64"
+          ARM64_TAG="${TEMP_REGISTRY}:${FULL_TAG}-arm64"
 
           echo "Creating multi-arch manifest: ${MANIFEST_TAG}"
           docker buildx imagetools create \
             -t "${MANIFEST_TAG}" \
             "${AMD64_TAG}" \
             "${ARM64_TAG}"
-
-      - name: Clean up individual arch images
-        run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq skopeo
-          REGISTRY="${{ needs.build.outputs.swr_registry }}"
-          FULL_TAG="${{ needs.build.outputs.full_tag }}"
-          
-          if [ "${{ needs.build.outputs.build_type }}" = "daily" ]; then
-            USERNAME="cn-north-4@${{ secrets.HW_USERNAME_DAILY }}"
-            TOKEN="${{ secrets.HW_TOKEN_DAILY }}"
-          else
-            USERNAME="${{ secrets.HW_USERNAME }}"
-            TOKEN="${{ secrets.HW_TOKEN }}"
-          fi
-          
-          echo "Deleting ${REGISTRY}:${FULL_TAG}-amd64"
-          skopeo delete --creds "${USERNAME}:${TOKEN}" \
-            "docker://${REGISTRY}:${FULL_TAG}-amd64" || true
-          
-          echo "Deleting ${REGISTRY}:${FULL_TAG}-arm64"
-          skopeo delete --creds "${USERNAME}:${TOKEN}" \
-            "docker://${REGISTRY}:${FULL_TAG}-arm64" || true
