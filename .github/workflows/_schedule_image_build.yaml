@@ -325,7 +325,7 @@ jobs:
           TORCH_NPU_VERSION=${{ inputs.torch_npu_version || '26.1.0' }}
           TORCH_NPU_DATE=${{ inputs.torch_npu_date || '20260715.4' }}
           CANN_QUAY_URL=${{ inputs.cann_quay_url || 'quay.io/atlas_inference/cann' }}
-          CANN_VERSION=${{ inputs.cann_version || '9.1.0.B090' }}
+          CANN_VERSION=${{ inputs.cann_version || '9.1.0.B120' }}
           TRITON_ASCEND_VERSION=${{ inputs.triton_ascend_version || '26.1.0.B110' }}
           TRITON_ASCEND_PACKAGE_VERSION=${{ inputs.triton_ascend_package_version || '3.2.2' }}
           ${{ inputs.build_args }}
@@ -430,7 +430,7 @@ jobs:
         run: |
           # Get current date in YYYYMMDD format
           DATE=$(date +'%Y%m%d')
-          # Get CANN version and convert to lowercase (e.g., 9.1.0.B090 -> 9.1.0.b090)
+          # Get CANN version and convert to lowercase (e.g., 9.1.0.B120 -> 9.1.0.b120)
           CANN_VERSION=$(echo "${{ inputs.cann_version }}" | tr '[:upper:]' '[:lower:]')
           # Get the base tag pattern (e.g., main)
           PATTERN="${{ inputs.schedule_tag_pattern }}"
