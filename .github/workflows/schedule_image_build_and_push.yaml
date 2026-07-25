@@ -150,9 +150,6 @@ jobs:
           - name: A5 openEuler
             dockerfile: Dockerfile.a5.openEuler
             suffix: 'a5-openeuler'
-    secrets:
-      QUAY_PASSWORD: ${{ inputs.build_type == 'daily' && secrets.QUAY_DAILY_PASSWORD || secrets.QUAY_PASSWORD }}
-      QUAY_TEMP_PASSWORD: ${{ inputs.build_type == 'daily' && secrets.QUAY_DAILY_TEMP_PASSWORD || secrets.QUAY_TEMP_PASSWORD }}
     steps:
       - uses: ./.github/workflows/_schedule_image_build.yaml
         with:
@@ -183,6 +180,9 @@ jobs:
             CANN_VERSION=${{ inputs.cann_version || '9.1.0.B110' }}
             TRITON_ASCEND_VERSION=${{ inputs.triton_ascend_version || '26.1.0.B110' }}
             TRITON_ASCEND_PACKAGE_VERSION=${{ inputs.triton_ascend_package_version || '3.2.2' }}
+        secrets:
+          QUAY_PASSWORD: ${{ inputs.build_type == 'daily' && secrets.QUAY_DAILY_PASSWORD || secrets.QUAY_PASSWORD }}
+          QUAY_TEMP_PASSWORD: ${{ inputs.build_type == 'daily' && secrets.QUAY_DAILY_TEMP_PASSWORD || secrets.QUAY_TEMP_PASSWORD }}
 
   image_build_by_commit:
     name: Image Build (commit mode) and Push to QUAY_TEMP
@@ -219,8 +219,6 @@ jobs:
           - name: A5 openEuler
             dockerfile: Dockerfile.a5.openEuler
             suffix: 'a5-openeuler'
-    secrets:
-      QUAY_TEMP_PASSWORD: ${{ secrets.QUAY_TEMP_PASSWORD }}
     steps:
       - uses: ./.github/workflows/_schedule_image_build.yaml
         with:
@@ -245,3 +243,5 @@ jobs:
             CANN_VERSION=${{ inputs.cann_version || '9.1.0.B090' }}
             TRITON_ASCEND_VERSION=${{ inputs.triton_ascend_version || '26.1.0.B110' }}
             TRITON_ASCEND_PACKAGE_VERSION=${{ inputs.triton_ascend_package_version || '3.2.2' }}
+        secrets:
+          QUAY_TEMP_PASSWORD: ${{ secrets.QUAY_TEMP_PASSWORD }}
