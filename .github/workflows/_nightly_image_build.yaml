@@ -52,8 +52,8 @@ on:
 
 jobs:
   build:
-    name: Build nightly-${{ inputs.target }}-${{ matrix.arch }}
-    runs-on: ${{ matrix.runner }}
+    name: Build nightly-${{ inputs.target }}-${{ matrix.arch.name }}
+    runs-on: ${{ matrix.arch.runner }}
     strategy:
       matrix:
         arch:
@@ -117,7 +117,7 @@ jobs:
 
           BUILD_ARGS=(
             --network host
-            --platform ${{ matrix.platform }}
+            --platform ${{ matrix.arch.platform }}
             -f .github/workflows/dockerfiles/Dockerfile.nightly.${{ inputs.target }}
             --build-arg CANN_VERSION="9.0.1"
             --build-arg UBUNTU_VERSION="22.04"
