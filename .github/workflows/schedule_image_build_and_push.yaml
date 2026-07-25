@@ -98,12 +98,12 @@ on:
       cann_quay_url:
         description: 'CANN Quay URL'
         required: false
-        default: 'quay.io/canuunac/cann'
+        default: 'quay.io/atlas_inference/cann'
         type: string
       cann_version:
         description: 'CANN version'
         required: false
-        default: '9.1.0.B110'
+        default: '9.1.0.B120'
         type: string
       triton_ascend_version:
         description: 'Triton Ascend version'
@@ -178,8 +178,8 @@ jobs:
         MEMFABRIC_DATE=${{ inputs.memfabric_date || '20260725.3' }}
         TORCH_NPU_VERSION=${{ inputs.torch_npu_version || '26.1.0' }}
         TORCH_NPU_DATE=${{ inputs.torch_npu_date || '20260715.4' }}
-        CANN_QUAY_URL=${{ inputs.cann_quay_url || 'quay.io/canuunac/cann' }}
-        CANN_VERSION=${{ inputs.cann_version || '9.1.0.B110' }}
+        CANN_QUAY_URL=${{ inputs.cann_quay_url || 'quay.io/atlas_inference/cann' }}
+        CANN_VERSION=${{ inputs.cann_version || '9.1.0.B120' }}
         TRITON_ASCEND_VERSION=${{ inputs.triton_ascend_version || '26.1.0.B110' }}
         TRITON_ASCEND_PACKAGE_VERSION=${{ inputs.triton_ascend_package_version || '3.2.2' }}
       
@@ -243,7 +243,7 @@ jobs:
         MEMFABRIC_DATE=${{ inputs.memfabric_date || '20260716.8' }}
         TORCH_NPU_VERSION=${{ inputs.torch_npu_version || '26.1.0' }}
         TORCH_NPU_DATE=${{ inputs.torch_npu_date || '20260715.4' }}
-        CANN_QUAY_URL=${{ inputs.cann_quay_url || 'quay.io/canuunac/cann' }}
+        CANN_QUAY_URL=${{ inputs.cann_quay_url || 'quay.io/atlas_inference/cann' }}
         CANN_VERSION=${{ inputs.cann_version || '9.1.0.B090' }}
         TRITON_ASCEND_VERSION=${{ inputs.triton_ascend_version || '26.1.0.B110' }}
         TRITON_ASCEND_PACKAGE_VERSION=${{ inputs.triton_ascend_package_version || '3.2.2' }}
