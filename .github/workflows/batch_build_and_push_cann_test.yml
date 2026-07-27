@@ -1,6 +1,11 @@
 name: Batch Build and Publish CANN Test Image
 
 on:
+  pull_request:
+    branches:
+      - 'main'
+      - 'releases/*'
+    types: [labeled]
   workflow_dispatch:
     inputs:
       cann_version:
@@ -31,20 +36,28 @@ concurrency:
 jobs:
   prepare:
     runs-on: ubuntu-latest
+    if: ${{ !(github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'image-build-cann')) }}
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
+      cann_version: ${{ steps.set-matrix.outputs.cann_version }}
+      py_version: ${{ steps.set-matrix.outputs.py_version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
       - name: Generate matrix
         id: set-matrix
+        env:
+          CANN_VERSION: ${{ inputs.cann_version }}
+          PY_VERSION: ${{ inputs.py_version }}
+          UBUNTU_OS_VERSION: ${{ inputs.os_version_ubuntu }}
+          OPENEULER_OS_VERSION: ${{ inputs.os_version_openeuler }}
         run: |
-          CANN_VERSION="${{ inputs.cann_version }}"
-          PY_VERSION="${{ inputs.py_version }}"
+          CANN_VERSION="${CANN_VERSION:-9.1.0.B120}"
+          PY_VERSION="${PY_VERSION:-3.12.13}"
           PY_SHORT="${PY_VERSION%.*}"
-          UBUNTU_OS_VERSION="${{ inputs.os_version_ubuntu }}"
-          OPENEULER_OS_VERSION="${{ inputs.os_version_openeuler }}"
+          UBUNTU_OS_VERSION="${UBUNTU_OS_VERSION:-24.04}"
+          OPENEULER_OS_VERSION="${OPENEULER_OS_VERSION:-24.03-lts-sp4}"
 
           MATRIX_JSON=$(jq -n -c \
             --arg cann_version "$CANN_VERSION" \
@@ -54,25 +67,26 @@ jobs:
             -f /dev/stdin <<'JQ'
             {
               include: [
+                {chip:"a3",   soc:"A3",   os:"ubuntu",    dockerfile:"Dockerfile.ubuntu.cann.test",   os_version:$ubuntu_os},
+                {chip:"a3",   soc:"A3",   os:"openeuler", dockerfile:"Dockerfile.openeuler.cann.test", os_version:$openeuler_os},
+                {chip:"910b", soc:"910b", os:"ubuntu",    dockerfile:"Dockerfile.ubuntu.cann.test",   os_version:$ubuntu_os},
+                {chip:"910b", soc:"910b", os:"openeuler", dockerfile:"Dockerfile.openeuler.cann.test", os_version:$openeuler_os},
                 {chip:"950",  soc:"950",  os:"ubuntu",    dockerfile:"Dockerfile.ubuntu.cann.test",   os_version:$ubuntu_os},
-                {chip:"950",  soc:"950",  os:"openeuler", dockerfile:"Dockerfile.openeuler.cann.test", os_version:$openeuler_os}
+                {chip:"950",  soc:"950",  os:"openeuler", dockerfile:"Dockerfile.openeuler.cann.test", os_version:$openeuler_os},
+                {chip:"310p", soc:"310p", os:"ubuntu",    dockerfile:"Dockerfile.ubuntu.cann.test",   os_version:$ubuntu_os},
+                {chip:"310p", soc:"310p", os:"openeuler", dockerfile:"Dockerfile.openeuler.cann.test", os_version:$openeuler_os}
               ] | map(. + {tag: ($cann_version + "-" + .chip + "-" + .os + .os_version + "-py" + $py_short)})
             }
           JQ
           )
-          # Other chips (uncomment and add above when needed):
-          # a3:   {chip:"a3",   soc:"A3",   os:"ubuntu",    dockerfile:"Dockerfile.ubuntu.cann.test",   os_version:$ubuntu_os}
-          # a3:   {chip:"a3",   soc:"A3",   os:"openeuler", dockerfile:"Dockerfile.openeuler.cann.test", os_version:$openeuler_os}
-          # 910b: {chip:"910b", soc:"910b", os:"ubuntu",    dockerfile:"Dockerfile.ubuntu.cann.test",   os_version:$ubuntu_os}
-          # 910b: {chip:"910b", soc:"910b", os:"openeuler", dockerfile:"Dockerfile.openeuler.cann.test", os_version:$openeuler_os}
-          # 310p: {chip:"310p", soc:"310p", os:"ubuntu",    dockerfile:"Dockerfile.ubuntu.cann.test",   os_version:$ubuntu_os}
-          # 310p: {chip:"310p", soc:"310p", os:"openeuler", dockerfile:"Dockerfile.openeuler.cann.test", os_version:$openeuler_os}
 
           {
             echo "matrix<<EOF"
             echo "$MATRIX_JSON"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
+          echo "cann_version=${CANN_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "py_version=${PY_VERSION}" >> "$GITHUB_OUTPUT"
 
   build:
     needs: prepare
@@ -83,8 +97,8 @@ jobs:
     uses: ./.github/workflows/build_and_push_cann_test.yml
     with:
       cann_tag: ${{ matrix.tag }}
-      cann_version: ${{ inputs.cann_version }}
-      py_version: ${{ inputs.py_version }}
+      cann_version: ${{ needs.prepare.outputs.cann_version }}
+      py_version: ${{ needs.prepare.outputs.py_version }}
       os_version: ${{ matrix.os_version }}
       soc: ${{ matrix.soc }}
       dockerfile: ${{ matrix.dockerfile }}
