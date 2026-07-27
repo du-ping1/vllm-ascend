@@ -130,7 +130,18 @@ jobs:
             BASE_IMAGE=""
           fi
 
-          FULL_TAG="${TAG_PREFIX}-${BRANCH_TAG}-${{ inputs.target }}"
+          CANN_VERSION_LOWER=$(echo "${{ inputs.cann_version }}" | tr '[:upper:]' '[:lower:]')
+          DATE=$(date +'%Y%m%d')
+          TAG_SUFFIX=""
+          if [ "${{ inputs.build_type }}" = "daily" ]; then
+            if [ "${{ inputs.target }}" = "310p" ]; then
+              TAG_SUFFIX="-openeuler-cann${CANN_VERSION_LOWER}-${DATE}"
+            else
+              TAG_SUFFIX="-cann${CANN_VERSION_LOWER}-${DATE}"
+            fi
+          fi
+
+          FULL_TAG="${TAG_PREFIX}-${BRANCH_TAG}-${{ inputs.target }}${TAG_SUFFIX}"
           IMAGE="${SWR_TEMP_REGISTRY}:${FULL_TAG}-${{ matrix.arch.name }}"
 
           BUILD_ARGS=(
@@ -145,14 +156,7 @@ jobs:
             --build-arg GITEE_TOKEN="${GITEE_TOKEN}"
           )
 
-          CANN_VERSION_LOWER=$(echo "${{ inputs.cann_version }}" | tr '[:upper:]' '[:lower:]')
-          DATE=$(date +'%Y%m%d')
-          if [ "${{ inputs.build_type }}" = "daily" ]; then
-            if [ "${{ inputs.target }}" = "310p" ]; then
-              TAG_SUFFIX="-openeuler-cann${CANN_VERSION_LOWER}-${DATE}"
-            else
-              TAG_SUFFIX="-cann${CANN_VERSION_LOWER}-${DATE}"
-            fi
+          if [ -n "$TAG_SUFFIX" ]; then
             BUILD_ARGS+=(--build-arg TAG_SUFFIX="${TAG_SUFFIX}")
           fi
 
