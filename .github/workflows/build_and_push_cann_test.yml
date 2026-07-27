@@ -110,6 +110,13 @@ jobs:
         run: |
           docker login -u cn-north-4@"$HW_USERNAME_DAILY" -p "$HW_TOKEN_DAILY" swr.cn-north-4.myhuaweicloud.com
 
+      - name: Compute CANN short version
+        id: cann
+        env:
+          CANN_VERSION: ${{ inputs.cann_version }}
+        run: |
+          echo "short_version=${CANN_VERSION%.*}" >> $GITHUB_OUTPUT
+
       - name: Build and push by digest
         uses: docker/build-push-action@v7
         id: build
@@ -123,6 +130,7 @@ jobs:
             PY_VERSION=${{ inputs.py_version }}
             CANN_VERSION=${{ inputs.cann_version }}
             SOC_VERSION=${{ inputs.soc }}
+            CANN_SHORT_VERSION=${{ steps.cann.outputs.short_version }}
           outputs: type=image,push-by-digest=true,name-canonical=true,push=true
           provenance: false
 
@@ -134,6 +142,7 @@ jobs:
             --build-arg OS_VERSION=${{ inputs.os_version }} \
             --build-arg PY_VERSION=${{ inputs.py_version }} \
             --build-arg CANN_VERSION=${{ inputs.cann_version }} \
+            --build-arg CANN_SHORT_VERSION=${{ steps.cann.outputs.short_version }} \
             --build-arg SOC_VERSION=${{ inputs.soc }} \
             -t "$SWR_TEMP_TAG" \
             -f ${{ github.workspace }}/.github/workflows/dockerfiles/${{ inputs.dockerfile }} \

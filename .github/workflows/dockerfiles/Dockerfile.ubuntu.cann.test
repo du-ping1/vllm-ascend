@@ -74,7 +74,7 @@ RUN pip install --no-cache-dir \
         attrs cython numpy decorator sympy cffi pyyaml pathlib2 \
         psutil protobuf==3.20 scipy requests absl-py
 
-ARG CANN_VERSION=9.1.0.B090
+ARG CANN_VERSION=9.1.0.B120
 ARG SOC_VERSION=A3
 # Note: Get the download link according to ARCH and download the installation package
 RUN ARCH=$(case "${TARGETPLATFORM}" in \
@@ -111,7 +111,8 @@ ARG OS_VERSION
 FROM ubuntu:${OS_VERSION} AS official-ubuntu
 
 
-ENV CANN_VERSION=9.1.0
+ARG CANN_SHORT_VERSION=9.1.0
+ENV CANN_VERSION=${CANN_SHORT_VERSION}
 ARG PY_VERSION
 # Python Environment variables
 ENV PATH=/usr/local/python${PY_VERSION}/bin:${PATH}
@@ -200,4 +201,3 @@ ENTRYPOINT ["/bin/bash", "-c", "\
     source /usr/local/Ascend/cann-${CANN_VERSION}/share/info/ascendnpu-ir/bin/set_env.sh && \
     source /usr/local/Ascend/nnal/atb/set_env.sh --cxx_abi=${ATB_CXX_ABI:-1}&& \
     exec \"$@\"", "--"]
-
