@@ -64,7 +64,7 @@ jobs:
                 # {chip:"310p", soc:"310p", os:"openeuler", dockerfile:"Dockerfile.openeuler.cann.test", os_version:$openeuler_os}
               ] | map(. + {tag: ($cann_version + "-" + .chip + "-" + .os + .os_version + "-py" + $py_short)})
             }
-            JQ
+          JQ
           )
 
           {
