@@ -27,6 +27,13 @@ on:
         description: 'Test Dockerfile filename'
         required: true
         type: string
+    secrets:
+      HW_USERNAME_DAILY:
+        description: 'Huawei Cloud SWR username for daily'
+        required: true
+      HW_TOKEN_DAILY:
+        description: 'Huawei Cloud SWR token for daily'
+        required: true
   workflow_dispatch:
     inputs:
       cann_tag:
@@ -76,7 +83,7 @@ jobs:
             runner: ubuntu-22.04-arm
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Free up disk space
         uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
@@ -85,19 +92,26 @@ jobs:
           docker-images: false
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Login to Quay
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: quay.io
           username: ${{ vars.QUAY_DAILY_USERNAME }}
-          password: ${{ secrets.QUAY_DAILY_TOKEN }}
+          password: ${{ secrets.QUAY_DAILY_PASSWORD }}
           ecr: false
           logout: false
 
+      - name: Login to Huawei Cloud SWR
+        env:
+          HW_USERNAME_DAILY: ${{ secrets.HW_USERNAME_DAILY }}
+          HW_TOKEN_DAILY: ${{ secrets.HW_TOKEN_DAILY }}
+        run: |
+          docker login -u cn-north-4@"$HW_USERNAME_DAILY" -p "$HW_TOKEN_DAILY" swr.cn-north-4.myhuaweicloud.com
+
       - name: Build and push by digest
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         id: build
         with:
           platforms: ${{ matrix.platform }}
@@ -111,6 +125,20 @@ jobs:
             SOC_VERSION=${{ inputs.soc }}
           outputs: type=image,push-by-digest=true,name-canonical=true,push=true
           provenance: false
+
+      - name: Build and push to SWR temp
+        run: |
+          SWR_TEMP_TAG="swr.cn-north-4.myhuaweicloud.com/inference/cann_temp:${{ inputs.cann_tag }}-${{ matrix.arch }}"
+          docker build \
+            --network host \
+            --build-arg OS_VERSION=${{ inputs.os_version }} \
+            --build-arg PY_VERSION=${{ inputs.py_version }} \
+            --build-arg CANN_VERSION=${{ inputs.cann_version }} \
+            --build-arg SOC_VERSION=${{ inputs.soc }} \
+            -t "$SWR_TEMP_TAG" \
+            -f ${{ github.workspace }}/.github/workflows/dockerfiles/${{ inputs.dockerfile }} \
+            ${{ github.workspace }}
+          docker push "$SWR_TEMP_TAG"
 
       - name: Export digest
         run: |
@@ -132,7 +160,7 @@ jobs:
     needs: build-push-digest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Download digests
         uses: actions/download-artifact@v4
@@ -142,17 +170,31 @@ jobs:
           merge-multiple: true
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Login to Quay
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: quay.io
           username: ${{ vars.QUAY_DAILY_USERNAME }}
-          password: ${{ secrets.QUAY_DAILY_TOKEN }}
+          password: ${{ secrets.QUAY_DAILY_PASSWORD }}
 
       - name: Create manifest list and push
         working-directory: ${{ runner.temp }}/digests
         run: |
           docker buildx imagetools create -t quay.io/atlas_inference/cann:${{ inputs.cann_tag }} \
             $(printf 'quay.io/atlas_inference/cann@sha256:%s ' *)
+
+      - name: Login to Huawei Cloud SWR
+        env:
+          HW_USERNAME_DAILY: ${{ secrets.HW_USERNAME_DAILY }}
+          HW_TOKEN_DAILY: ${{ secrets.HW_TOKEN_DAILY }}
+        run: |
+          docker login -u cn-north-4@"$HW_USERNAME_DAILY" -p "$HW_TOKEN_DAILY" swr.cn-north-4.myhuaweicloud.com
+
+      - name: Create SWR manifest list and push
+        run: |
+          docker buildx imagetools create \
+            -t swr.cn-north-4.myhuaweicloud.com/inference/cann:${{ inputs.cann_tag }} \
+            swr.cn-north-4.myhuaweicloud.com/inference/cann_temp:${{ inputs.cann_tag }}-amd64 \
+            swr.cn-north-4.myhuaweicloud.com/inference/cann_temp:${{ inputs.cann_tag }}-arm64
