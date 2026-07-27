@@ -182,18 +182,9 @@ jobs:
       - name: Push image to SWR temp
         if: ${{ github.repository_owner == 'du-ping1' && (steps.login-swr.conclusion == 'success' || steps.login-swr-daily.conclusion == 'success') }}
         run: |
-          BRANCH_TAG="${{ inputs.vllm_ascend_branch }}"
-          BRANCH_TAG="${BRANCH_TAG//\//-}"
-
-          if [ "${{ inputs.build_type }}" = "daily" ]; then
-            SWR_TEMP_REGISTRY="swr.cn-north-4.myhuaweicloud.com/inference/vllm-ascend-temp"
-            TAG_PREFIX="daily"
-          else
-            SWR_TEMP_REGISTRY="swr.cn-southwest-2.myhuaweicloud.com/base_image/ascend-ci/vllm-ascend-temp"
-            TAG_PREFIX="nightly-ci"
-          fi
-
-          docker push ${SWR_TEMP_REGISTRY}:${TAG_PREFIX}-${BRANCH_TAG}-${{ inputs.target }}-${{ matrix.arch.name }}
+          SWR_TEMP_REGISTRY="${{ steps.build.outputs.swr_temp_registry }}"
+          FULL_TAG="${{ steps.build.outputs.full_tag }}"
+          docker push ${SWR_TEMP_REGISTRY}:${FULL_TAG}-${{ matrix.arch.name }}
 
   merge-image:
     name: Merge multi-arch nightly-${{ inputs.target }}
