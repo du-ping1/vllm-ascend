@@ -39,6 +39,11 @@ on:
         type: string
         default: ''
         description: "Quay username for daily base image pull"
+      cann_version:
+        required: false
+        type: string
+        default: '9.1.0.B120'
+        description: "CANN version for base image tag"
     secrets:
       HW_USERNAME:
         required: false
@@ -139,6 +144,17 @@ jobs:
             --build-arg GITEE_USERNAME="${GITEE_USERNAME}"
             --build-arg GITEE_TOKEN="${GITEE_TOKEN}"
           )
+
+          CANN_VERSION_LOWER=$(echo "${{ inputs.cann_version }}" | tr '[:upper:]' '[:lower:]')
+          DATE=$(date +'%Y%m%d')
+          if [ "${{ inputs.build_type }}" = "daily" ]; then
+            if [ "${{ inputs.target }}" = "310p" ]; then
+              TAG_SUFFIX="-openeuler-cann${CANN_VERSION_LOWER}-${DATE}"
+            else
+              TAG_SUFFIX="-cann${CANN_VERSION_LOWER}-${DATE}"
+            fi
+            BUILD_ARGS+=(--build-arg TAG_SUFFIX="${TAG_SUFFIX}")
+          fi
 
           if [ -n "$BASE_IMAGE" ]; then
             BUILD_ARGS+=(--build-arg BASE_IMAGE="${BASE_IMAGE}")
