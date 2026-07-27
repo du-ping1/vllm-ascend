@@ -166,9 +166,9 @@ jobs:
       - name: Copy to SWR temp
         if: ${{ inputs.push }}
         run: |
-          docker buildx imagetools create \
-            -t swr.cn-north-4.myhuaweicloud.com/inference/cann_temp:${{ inputs.cann_tag }}-${{ matrix.arch }} \
-            quay.io/atlas_inference/cann@${{ steps.build.outputs.digest }}
+          docker pull quay.io/atlas_inference/cann@${{ steps.build.outputs.digest }}
+          docker tag quay.io/atlas_inference/cann@${{ steps.build.outputs.digest }} swr.cn-north-4.myhuaweicloud.com/inference/cann_temp:${{ inputs.cann_tag }}-${{ matrix.arch }}
+          docker push swr.cn-north-4.myhuaweicloud.com/inference/cann_temp:${{ inputs.cann_tag }}-${{ matrix.arch }}
 
       - name: Export digest
         if: ${{ inputs.push }}
@@ -227,7 +227,8 @@ jobs:
 
       - name: Create SWR manifest list and push
         run: |
-          docker buildx imagetools create \
-            -t swr.cn-north-4.myhuaweicloud.com/inference/cann:${{ inputs.cann_tag }} \
+          docker manifest create \
+            swr.cn-north-4.myhuaweicloud.com/inference/cann:${{ inputs.cann_tag }} \
             swr.cn-north-4.myhuaweicloud.com/inference/cann_temp:${{ inputs.cann_tag }}-amd64 \
             swr.cn-north-4.myhuaweicloud.com/inference/cann_temp:${{ inputs.cann_tag }}-arm64
+          docker manifest push swr.cn-north-4.myhuaweicloud.com/inference/cann:${{ inputs.cann_tag }}

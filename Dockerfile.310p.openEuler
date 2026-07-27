@@ -15,9 +15,10 @@
 # This file is a part of the vllm-ascend project.
 #
 
-ARG CANN_QUAY_URL="quay.io/canuunac/cann"
-ARG CANN_VERSION="9.1.0.B090"
-FROM ${CANN_QUAY_URL}:${CANN_VERSION}-310p-openeuler24.03-lts-sp4-py3.12
+ARG CANN_QUAY_URL="quay.io/ascend/cann"
+ARG CANN_VERSION="9.1.0-beta.1"
+ARG BASE_OS="openeuler24.03"
+FROM ${CANN_QUAY_URL}:${CANN_VERSION}-310p-${BASE_OS}-py3.12
 
 ARG PIP_INDEX_URL="https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
 
@@ -34,7 +35,7 @@ RUN pip config set global.index-url ${PIP_INDEX_URL} && \
 
 # Install vLLM
 ARG VLLM_REPO=https://github.com/vllm-project/vllm.git
-ARG VLLM_TAG=v0.24.0
+ARG VLLM_TAG=v0.25.1
 ARG VLLM_COMMIT=""
 RUN if [ -n "$VLLM_COMMIT" ]; then \
       git init /vllm-workspace/vllm && \

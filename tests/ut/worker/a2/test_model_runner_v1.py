@@ -502,7 +502,6 @@ class TestNPUModelRunnerOutputTokenIds(unittest.TestCase):
 
     def test_mtp3_placeholder_metadata_is_preserved_before_sanitizing_forward(self):
         runner = self._build_runner()
-        runner.pcp_size = 1
         runner.arange_np = np.arange(8, dtype=np.int32)
         runner._arange_scratch = np.empty(8, dtype=np.int32)
         runner.input_ids = SimpleNamespace(
@@ -516,7 +515,6 @@ class TestNPUModelRunnerOutputTokenIds(unittest.TestCase):
         spec_decode_metadata = runner._calc_spec_decode_metadata(
             num_draft_tokens=np.array([3], dtype=np.int32),
             cu_num_scheduled_tokens=np.array([4], dtype=np.int32),
-            num_pcp_pads=None,
         )
         runner._sanitize_placeholder_input_ids_for_forward(
             scheduler_output,
@@ -581,13 +579,14 @@ class TestNPUModelRunnerDebugger(unittest.TestCase):
         runner = self._build_runner(MagicMock(spec=["start", "stop", "step"]))
         runner.vllm_config = MagicMock()
         runner.vllm_config.model_config.enable_return_routed_experts = False
-        runner.ascend_config = SimpleNamespace(profiling_chunk_config=SimpleNamespace(need_timing=False))
+        runner.ascend_config = SimpleNamespace(
+            scheduler_config=SimpleNamespace(profiling_chunk_config=SimpleNamespace(need_timing=False))
+        )
         runner.execute_model_state = None
         runner.speculative_config = None
         runner.use_async_scheduling = False
         runner.num_spec_tokens = 0
         runner._draft_token_ids = None
-        runner.pcp_size = 1
         runner.supports_mm_inputs = False
         runner.model_config.is_encoder_decoder = False
         runner.synchronize_input_prep = nullcontext
@@ -617,13 +616,14 @@ class TestNPUModelRunnerDebugger(unittest.TestCase):
         runner = self._build_runner(MagicMock(spec=["start", "stop", "step"]))
         runner.vllm_config = MagicMock()
         runner.vllm_config.model_config.enable_return_routed_experts = False
-        runner.ascend_config = SimpleNamespace(profiling_chunk_config=SimpleNamespace(need_timing=False))
+        runner.ascend_config = SimpleNamespace(
+            scheduler_config=SimpleNamespace(profiling_chunk_config=SimpleNamespace(need_timing=False))
+        )
         runner.execute_model_state = None
         runner.speculative_config = None
         runner.use_async_scheduling = False
         runner.num_spec_tokens = 0
         runner._draft_token_ids = None
-        runner.pcp_size = 1
         runner.supports_mm_inputs = False
         runner.model_config.is_encoder_decoder = False
         runner.synchronize_input_prep = nullcontext

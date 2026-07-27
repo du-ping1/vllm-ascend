@@ -14,9 +14,10 @@
 # limitations under the License.
 # This file is a part of the vllm-ascend project.
 #
-ARG CANN_QUAY_URL="quay.io/canuunac/cann"
-ARG CANN_VERSION="9.1.0.B090"
-FROM ${CANN_QUAY_URL}:${CANN_VERSION}-910b-ubuntu24.04-py3.12
+ARG CANN_QUAY_URL="quay.io/ascend/cann"
+ARG CANN_VERSION="9.0.1"
+ARG BASE_OS="ubuntu22.04"
+FROM ${CANN_QUAY_URL}:${CANN_VERSION}-910b-${BASE_OS}-py3.12
 
 ARG PIP_INDEX_URL="https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
 
@@ -40,7 +41,7 @@ RUN pip config set global.index-url ${PIP_INDEX_URL} && \
 
 # Install vLLM
 ARG VLLM_REPO=https://github.com/vllm-project/vllm.git
-ARG VLLM_TAG=v0.24.0
+ARG VLLM_TAG=v0.25.1
 ARG VLLM_COMMIT=""
 RUN if [ -n "$VLLM_COMMIT" ]; then \
       git init /vllm-workspace/vllm && \
@@ -80,9 +81,9 @@ RUN echo "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib" >> ~/.bashrc
 # All ARG definitions are in the same stage for better maintainability
 ARG BUILD_TYPE="release"
 ARG MEMCACHE_VERSION="1.2.0"
-ARG MEMCACHE_DATE="20260716.5"
+ARG MEMCACHE_DATE="20260725.3"
 ARG MEMFABRIC_VERSION="1.2.0"
-ARG MEMFABRIC_DATE="20260716.8"
+ARG MEMFABRIC_DATE="20260725.3"
 ARG TORCH_NPU_VERSION="26.1.0"
 ARG TORCH_NPU_DATE="20260715.4"
 ARG TRITON_ASCEND_VERSION="26.1.0.B110"

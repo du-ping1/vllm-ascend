@@ -92,7 +92,6 @@ class ModelAclGraphManager(ModelCudaGraphManager):
         logger.info_once("run_fullgraph with num_tokens=%s", num_tokens)
         ret = super().run_fullgraph(desc)
 
-        positions = self.model_runner.input_buffers.positions[:num_tokens]
         # refer to vllm.v1.worker.gpu.dp_utils.sync_cudagraph_and_dp_padding to
         # calculate num_tokens_across_dp.
         num_tokens_across_dp = torch.full([self.model_runner.dp_size], num_tokens)
@@ -114,7 +113,6 @@ class ModelAclGraphManager(ModelCudaGraphManager):
                 num_tokens,
                 self.vllm_config,
                 self.model_runner.speculative_config,
-                positions.shape[0],
             )
         return ret
 
@@ -179,6 +177,18 @@ class ModelWithContext(nn.Module):
     def compute_logits(self, hidden_states: torch.Tensor):
         # draft model has `compute_logits`, which is not in ModelWithContext
         return self.original_model.compute_logits(hidden_states)
+
+    def compute_draft_logits(self, hidden_states: torch.Tensor):
+        return self.original_model.compute_draft_logits(hidden_states)
+
+    def markov_embed(self, token_ids: torch.Tensor):
+        return self.original_model.markov_embed(token_ids)
+
+    def markov_bias(self, markov_embed: torch.Tensor):
+        return self.original_model.markov_bias(markov_embed)
+
+    def map_draft_to_target(self, draft_ids: torch.Tensor):
+        return self.original_model.map_draft_to_target(draft_ids)
 
 
 @contextmanager
