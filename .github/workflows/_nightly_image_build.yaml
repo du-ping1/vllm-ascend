@@ -122,7 +122,7 @@ jobs:
             SWR_REGISTRY="swr.cn-north-4.myhuaweicloud.com/inference/vllm-ascend"
             SWR_TEMP_REGISTRY="swr.cn-north-4.myhuaweicloud.com/inference/vllm-ascend-temp"
             TAG_PREFIX="daily"
-            BASE_IMAGE="quay.io/mindie_ci/vllm-ascend"
+            BASE_IMAGE="quay.io/atlas_inference/vllm-ascend"
           else
             SWR_REGISTRY="swr.cn-southwest-2.myhuaweicloud.com/base_image/ascend-ci/vllm-ascend"
             SWR_TEMP_REGISTRY="swr.cn-southwest-2.myhuaweicloud.com/base_image/ascend-ci/vllm-ascend-temp"
